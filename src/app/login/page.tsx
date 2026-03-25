@@ -126,7 +126,6 @@ export default function LoginPage() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[20%] -left-[10%] w-[120%] h-[120%] bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05)_0%,transparent_50%)]" />
         <div className="absolute top-[10%] left-[-20%] w-[140%] h-[140%] bg-[conic-gradient(from_230deg_at_50%_50%,transparent_0%,rgba(139,92,246,0.03)_20%,transparent_40%)] blur-[100px]" />
-        <div className="absolute inset-0 opacity-[0.015] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
       <div className="relative z-10 w-full max-w-[440px] px-6 flex flex-col items-center">

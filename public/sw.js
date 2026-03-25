@@ -1,16 +1,20 @@
-const CACHE_NAME = "aurora-os-v2";
+const CACHE_NAME = "aurora-os-v3";
 const ASSETS_TO_CACHE = [
   "/",
   "/manifest.json",
-  "/icon.svg",
-  "/globals.css"
+  "/icon.svg"
 ];
 
-// Instalar y pre-cachear activos críticos
+// Instalar y pre-cachear activos críticos de forma resiliente
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      // Cacheamos cada asset individualmente para que un fallo no interrumpa el install
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map(url =>
+          cache.add(url).catch(err => console.warn(`[SW] No se pudo cachear ${url}:`, err))
+        )
+      );
     })
   );
   self.skipWaiting();
