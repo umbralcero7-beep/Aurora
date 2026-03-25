@@ -95,17 +95,24 @@ export default function OrdersPage() {
     if (currentNewOrders > lastOrderCount.current) {
       // Beep de alta frecuencia para cocina
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // La natural
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
+      const playChime = (freq: number, start: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + start + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + start + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + 0.5);
+      }
+
+      playChime(880, 0); // La
+      playChime(1046.50, 0.15); // Do (C6)
       
-      toast({ title: "¡NUEVA ORDEN!", description: "Se ha recibido una comanda en cocina.", variant: "default" });
+      toast({ title: "🛎️ ¡NUEVA ORDEN!", description: "Comanda recibida en cocina.", variant: "default" });
     }
     lastOrderCount.current = currentNewOrders;
   }, [orders, audioEnabled, toast]);

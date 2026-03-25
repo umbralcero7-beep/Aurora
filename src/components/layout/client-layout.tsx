@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { usePathname, useRouter } from "next/navigation";
 import { doc } from "firebase/firestore";
+import { DianSyncService } from "@/components/services/dian-sync-service";
 import { 
   WifiOff, 
   Menu, 
@@ -212,6 +213,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <FirebaseClientProvider>
+      <DianSyncService />
       <LanguageProvider>
         <AuthWrapper>
           {children}

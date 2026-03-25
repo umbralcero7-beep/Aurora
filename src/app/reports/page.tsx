@@ -22,6 +22,7 @@ import {
   Layers,
   BarChart3,
   Zap,
+  User,
   UtensilsCrossed
 } from "lucide-react"
 import { 
@@ -137,13 +138,28 @@ export default function ReportsPage() {
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 5)
 
+    // Waiter Ranking
+    const waiterMap: Record<string, { total: number, mesas: number }> = {}
+    todayInvoices.forEach(inv => {
+      const waiter = inv.waiterName || "Mostrador / Genérico"
+      if (!waiterMap[waiter]) waiterMap[waiter] = { total: 0, mesas: 0 }
+      waiterMap[waiter].total += (Number(inv.total) || 0)
+      waiterMap[waiter].mesas += 1
+    })
+
+    const waiterRanking = Object.entries(waiterMap)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5)
+
     return {
       todayInvoices,
       todayDeliveries,
       invTotal,
       delTotal,
       grandTotal: invTotal + delTotal,
-      ranking
+      ranking,
+      waiterRanking
     }
   }, [allInvoices, allDeliveries])
 
@@ -371,6 +387,35 @@ export default function ReportsPage() {
                         <div className="h-1 w-12 bg-slate-100 rounded-full mt-2 overflow-hidden">
                           <div className="h-full bg-primary" style={{ width: `${100 - (i * 20)}%` }} />
                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b pb-4 flex justify-between items-center mt-8">
+                  Ranking de Personal (Meseros)
+                  <Badge className="bg-secondary/10 text-secondary text-[8px] font-black uppercase px-3 py-1 rounded-full border-none">Productividad</Badge>
+                </h4>
+                <div className="space-y-3 min-h-[200px]">
+                  {detailedStats?.waiterRanking && detailedStats.waiterRanking.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 opacity-20 filter grayscale">
+                      <User className="h-10 w-10 mb-2" />
+                      <p className="text-[9px] font-black uppercase tracking-widest">Sin actividad registrada</p>
+                    </div>
+                  ) : (detailedStats?.waiterRanking || []).map((waiter, i) => (
+                    <div key={i} className="group flex items-center justify-between p-4 hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-2xl transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-xl bg-secondary/10 text-secondary text-[11px] font-black flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                          <User className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs uppercase text-slate-900 group-hover:text-secondary transition-colors">{waiter.name}</p>
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{waiter.mesas} Mesas atendidas hoy</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-slate-900 text-xs tracking-tighter">{formatCurrencyDetailed(waiter.total)}</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Eficiencia: {(waiter.total / Math.max(1, waiter.mesas)).toFixed(0)} / mesa</p>
                       </div>
                     </div>
                   ))}
