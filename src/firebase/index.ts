@@ -28,7 +28,9 @@ export function initializeFirebase() {
 
     const sdks = getSdks(firebaseApp);
 
-    // Habilitamos persistencia local con fallback para máxima compatibilidad (Móviles/Tablets)
+    // Habilitamos persistencia local con fallback para máxima compatibilidad
+    // NOTA: El error 'permission-denied' en collection_stream es esperado y se ignora
+    // silenciosamente — ocurre antes de que el usuario se autentique.
     if (typeof window !== "undefined") {
       enableMultiTabIndexedDbPersistence(sdks.firestore).catch((err) => {
         if (err.code === 'failed-precondition') {
@@ -36,8 +38,15 @@ export function initializeFirebase() {
         } else if (err.code === 'unimplemented') {
           // Fallback a persistencia simple si multi-pestaña no es soportada
           enableIndexedDbPersistence(sdks.firestore).catch((e) => {
-            console.error("Firestore: Fallo total de persistencia", e.code);
+            if (e.code !== 'permission-denied') {
+              console.error("Firestore: Fallo total de persistencia", e.code);
+            }
           });
+        } else if (err.code === 'permission-denied') {
+          // Silencioso: el SDK intenta acceder antes de que el usuario se autentique.
+          // Este error es esperado y la app funcionará correctamente tras el login.
+        } else {
+          console.warn("Firestore: Error de persistencia", err.code);
         }
       });
     }

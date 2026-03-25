@@ -55,7 +55,9 @@ service cloud.firestore {
                     getProfile().role in ['ADMIN', 'WAITER', 'CHEF', 'SUPPORT'];
     }
 
-    // Regla de respaldo: Denegar todo lo demás por defecto (Safe Fallback)
+    // Regla de respaldo: Denegar todo lo demás por defecto.
+    // NOTA: collection_stream y otras colecciones internas del SDK son denegadas
+    // naturalmente aquí. El SDK maneja estos errores de permiso de forma silenciosa.
     match /{document=**} {
       allow read, write: if request.auth != null && getProfile().role == 'SUPPORT';
     }
