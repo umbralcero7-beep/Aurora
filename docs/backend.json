@@ -1,0 +1,85 @@
+
+{
+  "entities": {
+    "Business": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Business",
+      "type": "object",
+      "description": "Entidad maestra que representa una marca, unidad de negocio o establecimiento independiente. Permite el aislamiento lógico de datos en entornos multitenencia (Ejemplos: Marca_A, Marca_B).",
+      "properties": {
+        "id": { "type": "string", "description": "Identificador único de la unidad de negocio (ej: sede-norte-01)." },
+        "name": { "type": "string", "description": "Nombre comercial del establecimiento." },
+        "taxId": { "type": "string", "description": "NIT, RUT o identificación legal de la unidad." },
+        "address": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "taxRate": { "type": "number", "default": 8 },
+        "brandTheme": { "type": "string", "description": "Configuración visual específica de la unidad de negocio." }
+      },
+      "required": ["id", "name", "taxId"]
+    },
+    "Invoice": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Invoice",
+      "type": "object",
+      "description": "Representa un documento fiscal universal vinculado a una unidad de negocio específica para cumplimiento legal.",
+      "properties": {
+        "id": { "type": "string" },
+        "invoiceNumber": { "type": "string" },
+        "isElectronic": { "type": "boolean" },
+        "customerName": { "type": "string" },
+        "customerTaxId": { "type": "string" },
+        "total": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "businessId": { "type": "string", "description": "Vínculo de propiedad con la marca para garantizar aislamiento de datos." }
+      },
+      "required": ["id", "invoiceNumber", "total", "businessId"]
+    },
+    "Vendor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vendor",
+      "type": "object",
+      "description": "Entidad inspirada en NetSuite para la gestión unificada de proveedores y cadena de suministro.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string", "enum": ["Alimentos", "Bebidas", "Servicios", "Logística"] },
+        "leadTime": { "type": "number", "description": "Días promedio de entrega." },
+        "rating": { "type": "number", "description": "Calificación de cumplimiento." },
+        "businessId": { "type": "string" }
+      },
+      "required": ["id", "name", "businessId"]
+    }
+  },
+  "auth": {
+    "providers": ["password", "anonymous"]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/businesses/{businessId}",
+        "definition": {
+          "entityName": "Business",
+          "schema": { "$ref": "#/backend/entities/Business" },
+          "description": "Registro maestro de las unidades de negocio en el ecosistema Aurora."
+        }
+      },
+      {
+        "path": "/invoices/{invoiceId}",
+        "definition": {
+          "entityName": "Invoice",
+          "schema": { "$ref": "#/backend/entities/Invoice" },
+          "description": "Registros de transacciones filtrados por businessId para garantizar soberanía de datos por marca."
+        }
+      },
+      {
+        "path": "/vendors/{vendorId}",
+        "definition": {
+          "entityName": "Vendor",
+          "schema": { "$ref": "#/backend/entities/Vendor" },
+          "description": "Directorio maestro de proveedores para la gestión de compras y suministros."
+        }
+      }
+    ],
+    "reasoning": "Arquitectura de multitenencia masiva diseñada para el aislamiento total de la información entre marcas independientes bajo una misma infraestructura cloud, incorporando lógicas de NetSuite OneWorld."
+  }
+}

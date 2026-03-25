@@ -1,0 +1,21 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    /**
+     * AURORA OS V4.2 - PROTOCOLO DE SIMULACIÓN MAESTRO
+     * Permitimos acceso total de lectura y escritura a usuarios autenticados
+     * para garantizar fluidez total en la presentación y pruebas.
+     */
+    
+    // Acceso público para validación de White-list antes del login
+    match /users/{userId} {
+      allow get: if true;
+    }
+
+    // Regla global para todos los módulos (POS, Cocina, Inventario, Notificaciones)
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

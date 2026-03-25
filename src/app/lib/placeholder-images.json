@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-dashboard",
+      "description": "Inventory management dashboard overview",
+      "imageUrl": "https://picsum.photos/seed/aurora1/1200/800",
+      "imageHint": "inventory dashboard"
+    },
+    {
+      "id": "warehouse",
+      "description": "Modern warehouse organization",
+      "imageUrl": "https://picsum.photos/seed/aurora2/800/600",
+      "imageHint": "warehouse logistics"
+    }
+  ]
+}

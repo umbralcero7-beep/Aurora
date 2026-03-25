@@ -1,0 +1,24 @@
+# Dependencias
+node_modules/
+dist/
+build/
+
+# Firebase y Next.js Cache (EL CULPABLE)
+.firebase/
+.next/
+out/
+*.log
+
+# Variables de entorno (Seguridad)
+.env
+.env.local
+.env.production
+serviceAccountKey.json
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
