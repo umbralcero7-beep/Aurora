@@ -1,21 +1,63 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    /**
-     * AURORA OS V4.2 - PROTOCOLO DE SIMULACIÓN MAESTRO
-     * Permitimos acceso total de lectura y escritura a usuarios autenticados
-     * para garantizar fluidez total en la presentación y pruebas.
-     */
     
-    // Acceso público para validación de White-list antes del login
-    match /users/{userId} {
-      allow get: if true;
+    // Función auxiliar para obtener el perfil del usuario de forma segura
+    function getProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data;
     }
 
-    // Regla global para todos los módulos (POS, Cocina, Inventario, Notificaciones)
+    // Función para verificar si el usuario pertenece al comercio (Multi-tenant isolation)
+    function belongsToBusiness(data) {
+      let profile = getProfile();
+      return profile.businessId == data.businessId || profile.role == 'SUPPORT';
+    }
+
+    // Reglas para la colección de usuarios
+    match /users/{email} {
+      // Cualquiera puede ver si un usuario existe para el White-list inicial
+      allow get: if true;
+      // Solo el dueño o soporte puede leer el perfil completo
+      allow read: if request.auth != null && (request.auth.token.email.lower() == email.lower() || getProfile().role == 'SUPPORT');
+      // Solo el dueño puede crear/editar su perfil, pero NO cambiar su propio ROL (prevención de escalada)
+      allow write: if request.auth != null && request.auth.token.email.lower() == email.lower() && 
+                    (request.resource.data.role == resource.data.role || getProfile().role == 'SUPPORT');
+    }
+
+    // Reglas para Facturas (Invoices)
+    match /invoices/{invoiceId} {
+      allow read: if request.auth != null && belongsToBusiness(resource.data);
+      // Solo ADMIN, CASHIER o SUPPORT pueden emitir/editar facturas
+      allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
+                    getProfile().role in ['ADMIN', 'CASHIER', 'SUPPORT'];
+    }
+
+    // Reglas para el Menú
+    match /menu/{productId} {
+      allow read: if request.auth != null && belongsToBusiness(resource.data);
+      // Solo ADMIN o SUPPORT pueden modificar el menú/precios
+      allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
+                    getProfile().role in ['ADMIN', 'SUPPORT'];
+    }
+
+    // Reglas para Insumos/Suministros
+    match /supplies/{supplyId} {
+      allow read: if request.auth != null && belongsToBusiness(resource.data);
+      allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
+                    getProfile().role in ['ADMIN', 'SUPPORT'];
+    }
+
+    // Reglas para Comandas/Órdenes
+    match /orders/{orderId} {
+      allow read: if request.auth != null && belongsToBusiness(resource.data);
+      // Meseros (WAITER) pueden crear órdenes, Kitchen (CHEF) puede editarlas
+      allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
+                    getProfile().role in ['ADMIN', 'WAITER', 'CHEF', 'SUPPORT'];
+    }
+
+    // Regla de respaldo: Denegar todo lo demás por defecto (Safe Fallback)
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && getProfile().role == 'SUPPORT';
     }
   }
 }
