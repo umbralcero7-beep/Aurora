@@ -10,7 +10,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { useUser, useDoc, useFirestore, useMemoFirebase } from "@/firebase";
 import { usePathname, useRouter } from "next/navigation";
 import { doc } from "firebase/firestore";
-import { DianSyncService } from "@/components/services/dian-sync-service";
 import { 
   WifiOff, 
   Menu, 
@@ -77,9 +76,6 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMounted(true);
     if (typeof navigator !== 'undefined') {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.warn('PWA SW error:', err));
-      }
       setIsOnline(navigator.onLine);
       
       const handleStatus = () => setIsOnline(navigator.onLine);
@@ -185,15 +181,10 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           </div>
 
           {!isOnline && (
-            <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-center animate-in slide-in-from-top duration-500 z-50 shadow-2xl shrink-0 border-b border-white/5">
-              <div className="flex items-center gap-3 text-center">
-                <div className="h-6 w-6 rounded-full bg-orange-500/20 flex items-center justify-center">
-                  <WifiOff className="h-3 w-3 text-orange-500 animate-pulse" />
-                </div>
-                <div>
-                  <span className="text-[8px] font-black uppercase tracking-[0.2em] block leading-none">Modo Resguardo Activo (Sin Red)</span>
-                  <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 italic">Las ventas se guardan en el dispositivo y se sincronizarán al volver la conexión.</p>
-                </div>
+            <div className="bg-orange-500 text-white px-4 py-1.5 flex items-center justify-center animate-in slide-in-from-top duration-500 z-50 shadow-lg shrink-0">
+              <div className="flex items-center gap-2 text-center">
+                <WifiOff className="h-2.5 w-2.5 animate-pulse" />
+                <span className="text-[7px] font-black uppercase tracking-[0.1em]">Modo Resguardo Local Activo</span>
               </div>
             </div>
           )}
@@ -213,7 +204,6 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
     <FirebaseClientProvider>
-      <DianSyncService />
       <LanguageProvider>
         <AuthWrapper>
           {children}

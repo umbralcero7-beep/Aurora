@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { 
   Users, 
   Search, 
@@ -81,6 +81,7 @@ export default function StaffDirectoryPage() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
+  const [mounted, setMounted] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
@@ -98,9 +99,17 @@ export default function StaffDirectoryPage() {
     role: "WAITER",
     contractType: "INDETERMINADO",
     salary: "",
-    hireDate: format(new Date(), "yyyy-MM-dd"),
+    hireDate: "",
     emergencyContact: ""
   })
+
+  useEffect(() => {
+    setMounted(true)
+    setNewStaff(prev => ({
+      ...prev,
+      hireDate: format(new Date(), "yyyy-MM-dd")
+    }))
+  }, [])
 
   const emailLower = user?.email?.toLowerCase();
   const isSuperUser = emailLower === 'umbralcero7@gmail.com';
@@ -255,6 +264,8 @@ export default function StaffDirectoryPage() {
     }).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""))
   }, [staff, searchTerm, statusFilter])
 
+  if (!mounted) return null;
+
   return (
     <div className="p-6 md:p-10 space-y-10 bg-white min-h-full max-w-[1600px] mx-auto font-body">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -321,7 +332,7 @@ export default function StaffDirectoryPage() {
                       </CardHeader>
                       <CardContent className="p-6 space-y-4">
                         <div className="space-y-2">
-                          {analysisResult.suggestions.map((s: string, i: number) => (
+                          {(analysisResult.suggestions || []).map((s: string, i: number) => (
                             <div key={i} className="flex gap-3 text-[10px] font-bold text-slate-600 uppercase">
                               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> {s}
                             </div>

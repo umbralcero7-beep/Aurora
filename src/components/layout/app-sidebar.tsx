@@ -130,51 +130,110 @@ export function AppSidebar() {
     }
   }
 
-  const navigationGroups = React.useMemo(() => [
+  const navigation = React.useMemo(() => [
     {
-      group: "Operaciones",
-      items: [
-        { title: t.nav.dashboard, url: "/", icon: LayoutDashboard, roles: ['ADMIN', 'SUPPORT', 'FINANCE', 'INVENTORY', 'RECEPTIONIST'] },
-        { title: t.nav.waiterOrders, url: "/comandas", icon: ShoppingCart, roles: ['ADMIN', 'WAITER', 'SUPPORT'], alert: hasNotifications },
-        { title: t.nav.pos, url: "/pos", icon: Receipt, roles: ['ADMIN', 'CASHIER', 'SUPPORT'] },
-        { title: t.nav.orders, url: "/orders", icon: ChefHat, roles: ['ADMIN', 'WAITER', 'SUPPORT', 'CHEF'] },
-        { title: t.nav.deliveries, url: "/deliveries", icon: Truck, roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT'] },
-        { title: t.nav.menu, url: "/menu", icon: UtensilsCrossed, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'RECEPTIONIST', 'CHEF'] },
-      ]
+      title: t.nav.reports,
+      url: "/reports",
+      icon: TrendingUp,
+      roles: ['ADMIN', 'SUPPORT', 'FINANCE']
     },
     {
-      group: "Administración",
-      items: [
-        { title: t.nav.products, url: "/inventory", icon: Package, roles: ['ADMIN', 'SUPPORT', 'INVENTORY', 'CHEF'] },
-        { title: "Costos ERP", url: "/costs", icon: Scale, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
-        { title: t.nav.invoices, url: "/invoices", icon: FileText, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
-        { title: t.nav.hr, url: "/hr", icon: Briefcase, roles: ['ADMIN', 'SUPPORT', 'HR'] },
-        { title: t.nav.fiscalControl, url: "/fiscal-control", icon: ShieldCheck, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
-      ]
+      title: t.nav.dashboard,
+      url: "/",
+      icon: LayoutDashboard,
+      roles: ['ADMIN', 'SUPPORT', 'FINANCE', 'INVENTORY', 'RECEPTIONIST']
     },
     {
-      group: "Inteligencia",
-      items: [
-        { title: t.nav.reports, url: "/reports", icon: TrendingUp, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
-      ]
+      title: t.nav.waiterOrders,
+      url: "/comandas",
+      icon: ShoppingCart,
+      roles: ['ADMIN', 'WAITER', 'SUPPORT'],
+      alert: hasNotifications
     },
     {
-      group: "Sistema",
-      items: [
-        { title: "Sedes", url: "/settings/venues", icon: Globe, roles: ['SUPPORT'] },
-        { title: t.nav.marketplace, url: "/marketplace", icon: Puzzle, roles: ['ADMIN', 'SUPPORT'] },
-        { title: t.nav.users, url: "/settings/users", icon: Users, roles: ['ADMIN', 'SUPPORT'] },
-        { title: t.nav.settings, url: "/settings", icon: Settings, roles: ['ADMIN', 'SUPPORT'] },
-      ]
-    }
-  ], [t, hasNotifications]);
+      title: t.nav.pos,
+      url: "/pos",
+      icon: Receipt,
+      roles: ['ADMIN', 'CASHIER', 'SUPPORT']
+    },
+    {
+      title: t.nav.menu,
+      url: "/menu",
+      icon: UtensilsCrossed,
+      roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'RECEPTIONIST', 'CHEF']
+    },
+    {
+      title: t.nav.deliveries,
+      url: "/deliveries",
+      icon: Truck,
+      roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT']
+    },
+    {
+      title: t.nav.orders,
+      url: "/orders",
+      icon: ChefHat,
+      roles: ['ADMIN', 'WAITER', 'SUPPORT', 'CHEF']
+    },
+    {
+      title: t.nav.products,
+      url: "/inventory",
+      icon: Package,
+      roles: ['ADMIN', 'SUPPORT', 'INVENTORY', 'CHEF']
+    },
+    {
+      title: "Costos ERP",
+      url: "/costs",
+      icon: Scale,
+      roles: ['ADMIN', 'SUPPORT', 'FINANCE']
+    },
+    {
+      title: t.nav.invoices,
+      url: "/invoices",
+      icon: FileText,
+      roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE']
+    },
+    {
+      title: t.nav.fiscalControl,
+      url: "/fiscal-control",
+      icon: ShieldCheck,
+      roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE']
+    },
+    {
+      title: t.nav.hr,
+      url: "/hr",
+      icon: Briefcase,
+      roles: ['ADMIN', 'SUPPORT', 'HR']
+    },
+    {
+      title: "Sedes",
+      url: "/settings/venues",
+      icon: Globe,
+      roles: ['SUPPORT']
+    },
+    {
+      title: t.nav.marketplace,
+      url: "/marketplace",
+      icon: Puzzle,
+      roles: ['ADMIN', 'SUPPORT']
+    },
+    {
+      title: t.nav.users,
+      url: "/settings/users",
+      icon: Users,
+      roles: ['ADMIN', 'SUPPORT']
+    },
+    {
+      title: t.nav.settings,
+      url: "/settings",
+      icon: Settings,
+      roles: ['ADMIN', 'SUPPORT']
+    },
+  ], [t, role, hasNotifications])
 
-  const filteredGroups = React.useMemo(() => {
-    return navigationGroups.map(group => ({
-      ...group,
-      items: group.items.filter(item => item.roles.includes(role))
-    })).filter(group => group.items.length > 0);
-  }, [navigationGroups, role]);
+  const filteredNavigation = React.useMemo(() => 
+    navigation.filter(item => item.roles.includes(role)),
+    [navigation, role]
+  );
 
   if (!mounted) return null;
 
@@ -192,54 +251,47 @@ export function AppSidebar() {
       </SidebarHeader>
       
       <SidebarContent className="px-2 pt-4">
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.group} className="py-2">
-            {!isCollapsed && (
-              <div className="px-4 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {group.group}
-              </div>
-            )}
-            <SidebarMenu className="gap-1">
-              {group.items.map((item) => {
-                const isActive = pathname === item.url.split('?')[0];
-                return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton 
-                      asChild 
-                      tooltip={item.title}
-                      isActive={isActive}
-                      className={cn(
-                        "data-[active=true]:bg-primary/5 data-[active=true]:text-primary transition-all relative",
-                        isCollapsed ? "h-10 w-10 mx-auto justify-center rounded-lg" : "h-11 rounded-xl"
-                      )}
-                    >
-                      <Link href={item.url} className={cn(
-                        "flex items-center",
-                        isCollapsed ? "justify-center p-0" : "gap-3 px-3"
-                      )}>
-                        <div className="relative">
-                          <item.icon className={cn(
-                            isActive ? "text-primary stroke-[2.5px]" : "text-slate-400 stroke-[2px]",
-                            isCollapsed ? "h-5 w-5" : "h-4 w-4"
+        <SidebarGroup>
+          <SidebarMenu key={role} className="gap-1">
+            {filteredNavigation.map((item) => {
+              const isActive = pathname === item.url.split('?')[0];
+              return (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton 
+                    asChild 
+                    tooltip={item.title}
+                    isActive={isActive}
+                    className={cn(
+                      "data-[active=true]:bg-primary/5 data-[active=true]:text-primary transition-all relative",
+                      isCollapsed ? "h-10 w-10 mx-auto justify-center rounded-lg" : "h-11 rounded-xl"
+                    )}
+                  >
+                    <Link href={item.url} className={cn(
+                      "flex items-center",
+                      isCollapsed ? "justify-center p-0" : "gap-3 px-3"
+                    )}>
+                      <div className="relative">
+                        <item.icon className={cn(
+                          isActive ? "text-primary stroke-[2.5px]" : "text-slate-400 stroke-[2px]",
+                          isCollapsed ? "h-5 w-5" : "h-4 w-4"
+                        )} />
+                        {item.alert && (
+                          <span className={cn(
+                            "absolute bg-destructive rounded-full border-2 border-white animate-pulse",
+                            isCollapsed ? "-top-0.5 -right-0.5 h-2.5 w-2.5" : "-top-1 -right-1 h-2 w-2"
                           )} />
-                          {item.alert && (
-                            <span className={cn(
-                              "absolute bg-destructive rounded-full border-2 border-white animate-pulse",
-                              isCollapsed ? "-top-0.5 -right-0.5 h-2.5 w-2.5" : "-top-1 -right-1 h-2 w-2"
-                            )} />
-                          )}
-                        </div>
-                        {!isCollapsed && (
-                          <span translate="no" className="text-[10px] uppercase tracking-widest font-black truncate">{item.title}</span>
                         )}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+                      </div>
+                      {!isCollapsed && (
+                        <span className="text-[10px] uppercase tracking-widest font-black truncate">{item.title}</span>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className={cn(

@@ -5,7 +5,7 @@ export const translations = {
   en: {
     nav: {
       dashboard: "Home",
-      pos: "POS",
+      pos: "Smart POS",
       waiterOrders: "Orders",
       menu: "Menu",
       products: "Supplies",
@@ -129,7 +129,7 @@ export const translations = {
   es: {
     nav: {
       dashboard: "Inicio",
-      pos: "POS",
+      pos: "Smart POS",
       waiterOrders: "Comandas",
       menu: "Carta",
       products: "Insumos",

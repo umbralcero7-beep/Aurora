@@ -1,5 +1,6 @@
 'use client';
 import { getAuth, type User } from 'firebase/auth';
+import { getApps } from 'firebase/app';
 
 export type SecurityRuleContext = {
   path: string;
@@ -36,13 +37,9 @@ interface SecurityRuleRequest {
 
 /**
  * Builds a security-rule-compliant auth object from the Firebase User.
- * @param currentUser The currently authenticated Firebase user.
- * @returns An object that mirrors request.auth in security rules, or null.
  */
 function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
-  if (!currentUser) {
-    return null;
-  }
+  if (!currentUser) return null;
 
   const token: FirebaseAuthToken = {
     name: currentUser.displayName,
@@ -62,25 +59,27 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
     },
   };
 
-  return {
-    uid: currentUser.uid,
-    token: token,
-  };
+  return { uid: currentUser.uid, token: token };
 }
 
 /**
  * Builds the complete, simulated request object for the error message.
+ * Safe for SSR and pre-initialization environments.
  */
 function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
   let authObject: FirebaseAuthObject | null = null;
-  try {
-    const firebaseAuth = getAuth();
-    const currentUser = firebaseAuth.currentUser;
-    if (currentUser) {
-      authObject = buildAuthObject(currentUser);
+  
+  // Solo intentamos obtener auth si Firebase ha sido inicializado y estamos en el cliente
+  if (typeof window !== 'undefined' && getApps().length > 0) {
+    try {
+      const firebaseAuth = getAuth();
+      const currentUser = firebaseAuth.currentUser;
+      if (currentUser) {
+        authObject = buildAuthObject(currentUser);
+      }
+    } catch (e) {
+      // Silencio absoluto si auth no está listo
     }
-  } catch {
-    // Silent fail if auth is not initialized
   }
 
   return {
@@ -91,12 +90,8 @@ function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
   };
 }
 
-/**
- * Builds the final, formatted error message.
- */
 function buildErrorMessage(requestObject: SecurityRuleRequest): string {
-  return `FirestoreError: Missing or insufficient permissions: The following request was denied by Firestore Security Rules:
-${JSON.stringify(requestObject, null, 2)}`;
+  return `FirestoreError: Missing or insufficient permissions: The following request was denied by Firestore Security Rules:\n${JSON.stringify(requestObject, null, 2)}`;
 }
 
 /**

@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { 
   Briefcase, 
   Users, 
@@ -60,8 +60,13 @@ export default function HRDashboardPage() {
   const { user } = useUser()
   const router = useRouter()
   
+  const [mounted, setMounted] = useState(false)
   const [isLiquidationOpen, setIsLiquidationOpen] = useState(false)
   const [isOvertimeOpen, setIsOvertimeOpen] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const emailLower = user?.email?.toLowerCase();
   const isSuperUser = emailLower === 'umbralcero7@gmail.com';
@@ -84,24 +89,21 @@ export default function HRDashboardPage() {
   const { data: staff, isLoading } = useCollection(staffRef)
 
   const stats = useMemo(() => {
-    if (!staff) return { total: 0, active: 0, avgPerformance: 0, payroll: 0 }
+    if (!staff || !mounted) return { total: 0, active: 0, avgPerformance: 0, payroll: 0 }
     const total = staff.length
     const active = staff.filter(s => s.status === 'ACTIVO').length
     const payroll = staff.reduce((acc, s) => acc + (Number(s.salary) || 0), 0)
     const avgPerf = staff.reduce((acc, s) => acc + (Number(s.performanceScore) || 0), 0) / (total || 1)
     return { total, active, avgPerformance: Math.round(avgPerf), payroll }
-  }, [staff])
+  }, [staff, mounted])
 
-  // Lógica de liquidación proyectada
   const liquidationProjections = useMemo(() => {
-    if (!staff) return []
+    if (!staff || !mounted) return []
     return staff.filter(s => s.status === 'ACTIVO').map(s => {
       const salary = Number(s.salary) || 0
       const startDate = s.hireDate ? parseISO(s.hireDate) : new Date()
       const daysWorked = differenceInDays(new Date(), startDate)
       
-      // Cálculo simplificado (Cesantías + Prima + Intereses + Vacaciones)
-      // Aproximadamente 2 meses de salario por año trabajado
       const factor = (daysWorked / 360) * 2
       const projected = salary * factor
 
@@ -113,9 +115,9 @@ export default function HRDashboardPage() {
         amount: projected
       }
     }).sort((a, b) => b.amount - a.amount)
-  }, [staff])
+  }, [staff, mounted])
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="h-full w-full flex flex-col items-center justify-center py-40 gap-4 bg-white">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />

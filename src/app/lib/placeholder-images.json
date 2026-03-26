@@ -2,16 +2,40 @@
 {
   "placeholderImages": [
     {
-      "id": "hero-dashboard",
-      "description": "Inventory management dashboard overview",
-      "imageUrl": "https://picsum.photos/seed/aurora1/1200/800",
-      "imageHint": "inventory dashboard"
+      "id": "aurora-hero",
+      "description": "Panel de control principal Aurora OS",
+      "imageUrl": "https://picsum.photos/seed/aurora_dash/1200/800",
+      "imageHint": "dashboard technology"
     },
     {
-      "id": "warehouse",
-      "description": "Modern warehouse organization",
-      "imageUrl": "https://picsum.photos/seed/aurora2/800/600",
-      "imageHint": "warehouse logistics"
+      "id": "aurora-pos",
+      "description": "Terminal de punto de venta profesional",
+      "imageUrl": "https://picsum.photos/seed/aurora_pos/800/600",
+      "imageHint": "restaurant pos"
+    },
+    {
+      "id": "aurora-kitchen",
+      "description": "Monitor de cocina de alto rendimiento",
+      "imageUrl": "https://picsum.photos/seed/aurora_kds/800/600",
+      "imageHint": "chef kitchen"
+    },
+    {
+      "id": "aurora-delivery",
+      "description": "Gestión de logística y domicilios",
+      "imageUrl": "https://picsum.photos/seed/aurora_delivery/800/600",
+      "imageHint": "delivery truck"
+    },
+    {
+      "id": "aurora-inventory",
+      "description": "Control de insumos y materia prima",
+      "imageUrl": "https://picsum.photos/seed/aurora_inv/800/600",
+      "imageHint": "inventory management"
+    },
+    {
+      "id": "aurora-hr",
+      "description": "Gestión de talento humano",
+      "imageUrl": "https://picsum.photos/seed/aurora_hr/800/600",
+      "imageHint": "team management"
     }
   ]
 }

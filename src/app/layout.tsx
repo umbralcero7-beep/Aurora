@@ -12,7 +12,6 @@ const roboto = Roboto({
 export const metadata = {
   title: 'Aurora OS - Gestión de Alto Rendimiento',
   description: 'Sistema operativo estratégico para gastronomía de élite.',
-  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

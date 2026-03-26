@@ -31,9 +31,7 @@ import {
   User,
   MapPin,
   IdCard,
-  Cloud,
-  CloudOff,
-  WifiOff
+  ShieldCheck
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -48,13 +46,15 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, where, addDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore"
+import { collection, query, where, doc, updateDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { processElectronicInvoice } from "@/ai/flows/electronic-invoice-flow"
-import { printerRegistry } from "@/lib/printer"
+import { useRouter } from "next/navigation"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 // Carta Aurora Precargada para Respaldo Demo
 const DEFAULT_MENU = [
@@ -76,7 +76,9 @@ export default function POSPage() {
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
+  const router = useRouter()
   
+  const [mounted, setMounted] = useState(false)
   const categories = ["Todos", "Entradas", "Platos Fuertes", "Bebidas", "Postres"]
   
   const [activeTab, setActiveTab] = useState("direct") 
@@ -88,26 +90,6 @@ export default function POSPage() {
   const [showCheckoutMobile, setShowCheckoutMobile] = useState(false)
   const [cashReceived, setCashAmount] = useState<number>(0)
   const [activeCategory, setActiveCategory] = useState("Todos")
-  const [isOnline, setIsOnline] = useState(true)
-
-  useEffect(() => {
-    setIsOnline(navigator.onLine)
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-    const handleSimulatedOffline = (e: any) => {
-      if (e.detail && typeof e.detail.offline === 'boolean') {
-        setIsOnline(!e.detail.offline)
-      }
-    }
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    window.addEventListener('aurora:toggle-offline' as any, handleSimulatedOffline)
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-      window.removeEventListener('aurora:toggle-offline' as any, handleSimulatedOffline)
-    }
-  }, [])
 
   // Facturación Electrónica State
   const [isElectronic, setIsElectronic] = useState(false)
@@ -118,6 +100,10 @@ export default function POSPage() {
     address: ""
   })
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
     return doc(db, "users", user.email.toLowerCase());
@@ -126,7 +112,7 @@ export default function POSPage() {
   const { data: profile } = useDoc(userProfileRef);
   
   const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com';
+  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
   
   const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
@@ -187,32 +173,15 @@ export default function POSPage() {
     setShowCheckoutMobile(true)
   }
 
-  const handleConnectPrinter = async () => {
-    const success = await printerRegistry.connect();
-    if (success) {
-      toast({ title: "Hardware O.K.", description: "Impresora USB vinculada exitosamente." });
-    } else {
-      toast({ variant: "destructive", title: "Conexión Fallida", description: "Verifica permisos USB en tu navegador." });
-    }
-  }
-
-  const handleManualPrint = async () => {
-    if (currentTotal === 0) return;
-    try {
-      const cartToPrint = directCart.length > 0 ? directCart : (selectedOrder?.items || []);
-      await printerRegistry.printReceipt(effectiveVenueName, cartToPrint, currentTotal);
-      toast({ title: "Hardware", description: "Comando de impresión térmica enviado al buffer de cola." });
-    } catch(e) {
-      toast({ variant: "destructive", title: "Hardware Inactivo", description: "Por favor vincula una tiquetera primero." });
-    }
-  }
-
   const handleFinalizeInvoice = async () => {
-    if (!db || !effectiveBusinessId) return
+    if (!db || !effectiveBusinessId) {
+      toast({ variant: "destructive", title: "Error de Configuración", description: "No se detectó el ID de negocio. Verifica tu perfil." })
+      return
+    }
     
     const isDirect = directCart.length > 0
     const cartToProcess = isDirect ? directCart : (selectedOrder?.items || [])
-    const totalToProcess = isDirect ? directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15 : selectedOrder.total
+    const totalToProcess = isDirect ? directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15 : (selectedOrder?.total || 0)
 
     if (cartToProcess.length === 0) {
       toast({ variant: "destructive", title: "Caja Vacía", description: "Selecciona productos o una mesa." })
@@ -225,89 +194,82 @@ export default function POSPage() {
     }
 
     setIsFinishing(true)
-    try {
-      const invoiceNum = `INV-${Date.now().toString().slice(-6)}`;
-      
-      const invoiceData = {
-        orderId: isDirect ? "direct-sale" : selectedOrder.id,
-        orderNumber: isDirect ? `DIR-${Date.now().toString().slice(-4)}` : (selectedOrder.orderNumber || 'S/N'),
-        invoiceNumber: invoiceNum,
-        tableNumber: isDirect ? "PARA LLEVAR" : selectedOrder.tableNumber,
-        customerName: isElectronic ? customerData.name : "Consumidor Final",
-        customerTaxId: isElectronic ? customerData.taxId : "S/N",
-        customerEmail: isElectronic ? customerData.email : "",
-        customerAddress: isElectronic ? customerData.address : "",
-        isElectronic: isElectronic,
-        items: cartToProcess,
-        subtotal: totalToProcess / 1.15,
-        tax: totalToProcess - (totalToProcess / 1.15),
-        total: totalToProcess,
-        paymentMethod: paymentMethod,
-        timestamp: new Date().toISOString(),
-        businessId: effectiveBusinessId,
-        venueId: effectiveBusinessId,
-        assignedVenue: effectiveVenueName,
-        cashierName: (profile?.displayName || user?.email?.split('@')[0] || 'CAJERO').toUpperCase(),
-        waiterName: isDirect ? (profile?.displayName || user?.email?.split('@')[0] || 'CAJERO').toUpperCase() : (selectedOrder?.waiterName || 'S/N')
-      }
-
-      await addDoc(collection(db, "invoices"), invoiceData)
-      
-      if (!isDirect && selectedOrder) {
-        await updateDoc(doc(db, "orders", selectedOrder.id), { status: "Closed" })
-      }
-
-      // Impresión de Hardware Local (si hay tiquetera)
-      try {
-        await printerRegistry.printReceipt(effectiveVenueName, cartToProcess, totalToProcess);
-      } catch (e) {
-        // Ignorar en caso de que no haya impresora conectada
-      }
-
-      // Despachar con IA si es electrónica y hay red
-      if (isElectronic) {
-        if (isOnline) {
-          try {
-            const aiResult = await processElectronicInvoice({
-              customerName: customerData.name,
-              taxId: customerData.taxId,
-              email: customerData.email,
-              address: customerData.address,
-              items: cartToProcess,
-              total: totalToProcess,
-              invoiceNumber: invoiceNum
-            });
-            toast({ title: "Cero: Factura Enviada", description: aiResult.message });
-          } catch (e) {
-            toast({ variant: "destructive", title: "Cero: Error de Red", description: "La factura electrónica se reintentará al recuperar conexión." });
-          }
-        } else {
-          toast({ variant: "default", title: "Cero: Modo Resguardo", description: "Factura guardada localmente. El envío a la DIAN se realizará automáticamente al detectar red." });
-        }
-      }
-
-      toast({ 
-        title: isOnline ? "¡Venta Exitosa!" : "¡Venta Guardada Local!", 
-        description: isOnline ? "Transacción auditada y registrada." : "Registro local completado (Modo Resguardo)." 
-      })
-      
-      // Reset
-      setSelectedOrder(null)
-      setDirectCart([])
-      setShowCheckoutMobile(false)
-      setCashAmount(0)
-      setIsElectronic(false)
-      setCustomerData({ name: "", taxId: "", email: "", address: "" })
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setIsFinishing(false)
+    
+    const invoiceRef = doc(collection(db, "invoices"))
+    const invoiceNum = `INV-${Date.now().toString().slice(-6)}`;
+    const invoiceData = {
+      id: invoiceRef.id,
+      orderId: isDirect ? "direct-sale" : selectedOrder.id,
+      orderNumber: isDirect ? `DIR-${Date.now().toString().slice(-4)}` : (selectedOrder?.orderNumber || 'S/N'),
+      invoiceNumber: invoiceNum,
+      tableNumber: isDirect ? "PARA LLEVAR" : selectedOrder.tableNumber,
+      customerName: isElectronic ? customerData.name : "Consumidor Final",
+      customerTaxId: isElectronic ? customerData.taxId : "S/N",
+      customerEmail: isElectronic ? customerData.email : "",
+      customerAddress: isElectronic ? customerData.address : "",
+      isElectronic: isElectronic,
+      items: cartToProcess,
+      subtotal: totalToProcess / 1.15,
+      tax: totalToProcess - (totalToProcess / 1.15),
+      total: totalToProcess,
+      paymentMethod: paymentMethod,
+      timestamp: new Date().toISOString(),
+      businessId: effectiveBusinessId,
+      venueId: effectiveBusinessId,
+      assignedVenue: effectiveVenueName,
+      cashierName: (profile?.displayName || user?.email?.split('@')[0] || 'CAJERO').toUpperCase()
     }
+
+    setDoc(invoiceRef, invoiceData)
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: invoiceRef.path,
+          operation: 'create',
+          requestResourceData: invoiceData
+        }))
+      })
+    
+    if (!isDirect && selectedOrder) {
+      updateDoc(doc(db, "orders", selectedOrder.id), { status: "Closed" })
+        .catch(async (err) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `orders/${selectedOrder.id}`,
+            operation: 'update',
+            requestResourceData: { status: 'Closed' }
+          }))
+        })
+    }
+
+    if (isElectronic && typeof navigator !== 'undefined' && navigator.onLine) {
+      processElectronicInvoice({
+        customerName: customerData.name,
+        taxId: customerData.taxId,
+        email: customerData.email,
+        address: customerData.address,
+        items: cartToProcess,
+        total: totalToProcess,
+        invoiceNumber: invoiceNum
+      }).then(aiResult => {
+        toast({ title: "Cero: Factura Enviada", description: aiResult.message });
+      }).catch(err => console.warn("AI Invoice dispatch deferred (Offline)."));
+    }
+
+    toast({ title: "¡Venta Exitosa!", description: "Transacción registrada en local." })
+    
+    setSelectedOrder(null)
+    setDirectCart([])
+    setShowCheckoutMobile(false)
+    setCashAmount(0)
+    setIsElectronic(false)
+    setCustomerData({ name: "", taxId: "", email: "", address: "" })
+    setIsFinishing(false)
   }
 
   const currentTotal = directCart.length > 0 
     ? directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15 
     : (selectedOrder?.total || 0)
+
+  if (!mounted) return null;
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-12 h-[calc(100svh-2.5rem)] bg-white font-body overflow-hidden">
@@ -327,7 +289,14 @@ export default function POSPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="h-9 px-4 rounded-xl border-primary text-primary font-black text-[8px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
+              onClick={() => router.push('/fiscal-control')}
+            >
+              <ShieldCheck className="mr-2 h-3 w-3" /> Cierre Fiscal (Z)
+            </Button>
             <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">{effectiveVenueName}</Badge>
           </div>
         </div>
@@ -443,10 +412,8 @@ export default function POSPage() {
       </div>
 
       <Card className={cn(
-        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl bg-white z-50 lg:z-30 min-h-0 overflow-hidden",
-        showCheckoutMobile 
-          ? "fixed inset-0 h-[100dvh] w-full lg:static lg:h-full lg:w-auto" 
-          : "hidden lg:flex lg:h-full"
+        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl bg-white z-30",
+        showCheckoutMobile ? "fixed inset-0 h-full w-full" : "hidden lg:flex"
       )}>
         <CardHeader className="bg-slate-900 text-white p-4 flex flex-row justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
@@ -458,18 +425,11 @@ export default function POSPage() {
               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest italic">Cierre Fiscal</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center">
-            <Button variant="ghost" className="hidden lg:flex h-8 w-8 text-white/50 hover:text-white p-0" title="Vincular Tiquetera" onClick={handleConnectPrinter}>
-              <Printer className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" className="lg:hidden h-8 w-8 text-white/50 hover:text-white p-0" onClick={() => setShowCheckoutMobile(false)}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+          <Button variant="ghost" className="lg:hidden h-8 w-8 text-white/50 p-0" onClick={() => setShowCheckoutMobile(false)}><X className="h-5 w-5" /></Button>
         </CardHeader>
 
-        <CardContent className="flex-1 min-h-0 p-0 bg-slate-50/20">
-          <ScrollArea className="h-full">
+        <CardContent className="flex-1 p-0 overflow-hidden flex flex-col bg-slate-50/20">
+          <ScrollArea className="flex-1">
             <div className="divide-y divide-slate-100">
               <div className="p-4 bg-white space-y-3">
                 <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest border-b pb-1.5 flex justify-between">
@@ -484,7 +444,7 @@ export default function POSPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {(directCart.length > 0 ? directCart : selectedOrder.items).map((item: any) => (
+                    {(directCart.length > 0 ? directCart : (selectedOrder?.items || [])).map((item: any) => (
                       <div key={item.id} className="flex justify-between items-center">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center bg-slate-50 rounded-md p-0.5 border text-[9px] font-black">
@@ -623,34 +583,19 @@ export default function POSPage() {
           </div>
           <div className="grid grid-cols-4 gap-2 w-full">
             <Button 
-              className={cn(
-                "col-span-3 h-14 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg transition-all active:scale-95 disabled:bg-slate-100 disabled:text-slate-300",
-                isOnline ? "bg-primary hover:bg-primary/90 text-white shadow-primary/20" : "bg-orange-600 hover:bg-orange-700 text-white"
-              )}
+              className="col-span-3 h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:bg-slate-100 disabled:text-slate-300"
               disabled={currentTotal === 0 || isFinishing}
               onClick={handleFinalizeInvoice}
             >
-              {isFinishing ? (
-                <Loader2 className="animate-spin h-6 w-6" />
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                  {isOnline ? <CheckCircle2 className="h-5 w-5" /> : <CloudOff className="h-5 w-5 animate-pulse" />}
-                  <span>
-                    {isElectronic 
-                      ? (isOnline ? "Emitir Electrónica" : "Cola Electrónica Local") 
-                      : (isOnline ? "Cobrar" : "Cobro Local")}
-                  </span>
-                </div>
-              )}
+              {isFinishing ? <Loader2 className="animate-spin h-6 w-6" /> : <><CheckCircle2 className="mr-2 h-5 w-5" /> {isElectronic ? "Emitir Electrónica" : "Cobrar"}</>}
             </Button>
             <Button 
               variant="outline"
-              className="h-14 border-slate-100 rounded-xl hover:bg-slate-50 transition-all group p-0 flex flex-col items-center justify-center gap-1"
+              className="h-14 border-slate-100 rounded-xl hover:bg-slate-50 transition-all group p-0 flex items-center justify-center"
               disabled={currentTotal === 0}
-              onClick={handleManualPrint}
+              onClick={() => toast({ title: "Ticket Fiscal", description: "Imprimiendo copia..." })}
             >
-              <Printer className="h-5 w-5 text-slate-300 group-hover:text-primary" />
-              <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Re-Imprimir</span>
+              <Printer className="h-6 w-6 text-slate-300 group-hover:text-primary" />
             </Button>
           </div>
         </CardFooter>

@@ -1,7 +1,6 @@
-
 "use client"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { 
   Clock, 
   Search, 
@@ -29,24 +28,26 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, updateDoc, doc, where, addDoc } from "firebase/firestore"
+import { collection, query, orderBy, updateDoc, doc, where, setDoc } from "firebase/firestore"
 import { useLanguage } from "@/context/language-context"
 import { formatDistanceToNow } from "date-fns"
 import { es, enUS } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
+import { errorEmitter } from "@/firebase/error-emitter"
+import { FirestorePermissionError } from "@/firebase/errors"
 
 export default function OrdersPage() {
   const { t, language } = useLanguage()
   const db = useFirestore()
   const { user } = useUser()
   const { toast } = useToast()
+  const [mounted, setMounted] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [audioEnabled, setAudioEnabled] = useState(false)
-  const lastOrderCount = useRef(0)
 
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
@@ -55,6 +56,8 @@ export default function OrdersPage() {
 
   const { data: profile } = useDoc(userProfileRef);
 
+  const emailLower = user?.email?.toLowerCase();
+  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
   const isSupport = profile?.role === 'SUPPORT' || isSuperUser;
   const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
@@ -63,7 +66,6 @@ export default function OrdersPage() {
     if (!db) return null
     const baseQuery = collection(db, "orders");
     
-    // Consulta simplificada: quitamos el orderBy de Firestore para evitar requisito de índices compuestos
     if (isSupport) {
       return query(baseQuery, where("status", "in", ["Open", "Preparing"]))
     }
@@ -78,7 +80,6 @@ export default function OrdersPage() {
 
   const { data: orders, isLoading } = useCollection(ordersRef)
 
-  // Ordenamos en memoria para asegurar que las más recientes aparezcan primero sin fallos de índice
   const sortedOrders = useMemo(() => {
     if (!orders) return []
     return [...orders].sort((a, b) => {
@@ -88,72 +89,62 @@ export default function OrdersPage() {
     })
   }, [orders])
 
-  // Sistema de Alerta Sonora por Nueva Comanda
-  useMemo(() => {
-    if (!orders || !audioEnabled) return;
-    const currentNewOrders = orders.filter(o => o.status === 'Open').length;
-    if (currentNewOrders > lastOrderCount.current) {
-      // Beep de alta frecuencia para cocina
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const playChime = (freq: number, start: number) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-        gain.gain.setValueAtTime(0, ctx.currentTime + start);
-        gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + start + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + start + 0.4);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + start);
-        osc.stop(ctx.currentTime + start + 0.5);
-      }
+  const filteredOrders = useMemo(() => {
+    return sortedOrders.filter(order => 
+      order.tableNumber?.toString().includes(searchTerm) ||
+      order.waiterName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.assignedVenue?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.orderNumber?.toString().includes(searchTerm)
+    )
+  }, [sortedOrders, searchTerm])
 
-      playChime(880, 0); // La
-      playChime(1046.50, 0.15); // Do (C6)
-      
-      toast({ title: "🛎️ ¡NUEVA ORDEN!", description: "Comanda recibida en cocina.", variant: "default" });
-    }
-    lastOrderCount.current = currentNewOrders;
-  }, [orders, audioEnabled, toast]);
-
-  const filteredOrders = sortedOrders.filter(order => 
-    order.tableNumber?.toString().includes(searchTerm) ||
-    order.waiterName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.assignedVenue?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.orderNumber?.toString().includes(searchTerm)
-  )
-
-  const updateOrderStatus = async (order: any) => {
+  const updateOrderStatus = (order: any) => {
     if (!db) return
     
     let newStatus = "Preparing"
     if (order.status === "Preparing") newStatus = "Ready"
     if (order.status === "Ready" || order.status === "Closed") return
 
-    try {
-      await updateDoc(doc(db, "orders", order.id), { status: newStatus })
-      
-      if (newStatus === "Ready") {
-        await addDoc(collection(db, "notifications"), {
-          businessId: order.businessId || 'global',
-          type: 'ORDER_READY',
-          message: `¡Mesa #${order.tableNumber} está lista!`,
-          tableNumber: order.tableNumber,
-          status: 'unread',
-          createdAt: new Date().toISOString(),
-          assignedVenue: order.assignedVenue || 'Sede Aurora'
-        })
-        toast({ title: "Notificación Enviada", description: `Mesa ${order.tableNumber} lista para servir.` })
-      } else {
-        toast({ title: "Comanda en Marcha", description: `Preparando Mesa ${order.tableNumber}.` })
+    updateDoc(doc(db, "orders", order.id), { status: newStatus })
+      .catch(async (err) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: `orders/${order.id}`,
+          operation: 'update',
+          requestResourceData: { status: newStatus }
+        }))
+      })
+    
+    if (newStatus === "Ready") {
+      const notifRef = doc(collection(db, "notifications"))
+      const notificationData = {
+        id: notifRef.id,
+        businessId: order.businessId || 'global',
+        type: 'ORDER_READY',
+        message: `¡Mesa #${order.tableNumber} está lista!`,
+        tableNumber: order.tableNumber,
+        status: 'unread',
+        createdAt: new Date().toISOString(),
+        assignedVenue: order.assignedVenue || 'Sede Aurora'
       }
-    } catch (error) {
-      console.error(error)
+      
+      setDoc(notifRef, notificationData)
+        .catch(async (err) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: notifRef.path,
+            operation: 'create',
+            requestResourceData: notificationData
+          }))
+        })
+      
+      toast({ title: "Notificación Enviada", description: `Mesa ${order.tableNumber} lista para servir.` })
+    } else {
+      toast({ title: "Comanda en Marcha", description: `Preparando Mesa ${order.tableNumber}.` })
     }
   }
 
   const dateLocale = language === 'es' ? es : enUS
+
+  if (!mounted) return null;
 
   return (
     <div className="p-6 md:p-10 space-y-10 bg-white min-h-full font-body max-w-[1600px] mx-auto">
@@ -167,20 +158,9 @@ export default function OrdersPage() {
             Visualización de comandas en tiempo real por # de orden.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {!audioEnabled ? (
-            <Button variant="outline" className="rounded-xl h-12 bg-orange-50 text-orange-600 border-orange-200 font-black text-[9px] uppercase" onClick={() => setAudioEnabled(true)}>
-              <Bell className="mr-2 h-4 w-4 animate-ring" /> Activar Alerta Sonora
-            </Button>
-          ) : (
-            <Badge className="bg-emerald-100 text-emerald-600 border-emerald-200 font-black text-[9px] uppercase px-4 h-12 flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" /> Audio Activo
-            </Badge>
-          )}
-          <div className="bg-primary/10 px-6 py-3 rounded-[1.2rem] border border-primary/20 flex items-center gap-3">
-            {isSupport ? <ShieldCheck className="h-5 w-5 text-secondary" /> : <Utensils className="h-5 w-5 text-primary" />}
-            <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Producción Activa</span>
-          </div>
+        <div className="bg-primary/10 px-6 py-3 rounded-[1.2rem] border border-primary/20 flex items-center gap-3">
+          {isSupport ? <ShieldCheck className="h-5 w-5 text-secondary" /> : <Utensils className="h-5 w-5 text-primary" />}
+          <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Producción Activa</span>
         </div>
       </div>
 

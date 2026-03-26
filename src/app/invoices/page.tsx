@@ -48,7 +48,7 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle,
+  DialogTitle, 
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog"
@@ -59,11 +59,14 @@ import { format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import * as XLSX from 'xlsx'
+import { useToast } from "@/hooks/use-toast"
 
 export default function InvoicesPage() {
   const { t, language } = useLanguage()
   const db = useFirestore()
   const { user } = useUser()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -107,6 +110,51 @@ export default function InvoicesPage() {
     setIsPreviewOpen(true);
   }
 
+  const handleExportExcel = () => {
+    if (!filteredInvoices || filteredInvoices.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Sin datos",
+        description: "No hay facturas en el ciclo actual para exportar."
+      })
+      return;
+    }
+
+    try {
+      const dataToExport = filteredInvoices.map(inv => ({
+        'FECHA': inv.timestamp ? format(new Date(inv.timestamp), "dd/MM/yyyy HH:mm") : '---',
+        'FACTURA': inv.invoiceNumber,
+        'IDENTIDAD_FISCAL': inv.customerName || 'Consumidor Final',
+        'NIT_RUT': inv.customerTaxId || 'S/N',
+        'TIPO': inv.isElectronic ? 'ELECTRÓNICA' : 'POS',
+        'SUBTOTAL': inv.subtotal || (Number(inv.total) / 1.15),
+        'IVA_15': inv.tax || (Number(inv.total) - (Number(inv.total) / 1.15)),
+        'TOTAL_BRUTO': Number(inv.total),
+        'MEDIO_PAGO': inv.paymentMethod || 'Efectivo',
+        'SEDE': inv.assignedVenue || 'Sede Central',
+        'CAJERO': inv.cashierName || 'SISTEMA'
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Auditoria_Facturacion");
+      
+      XLSX.writeFile(workbook, `AURORA_AUDITORIA_FISCAL_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      
+      toast({
+        title: "Exportación Exitosa",
+        description: "El reporte de auditoría ha sido generado en formato Excel."
+      });
+    } catch (error) {
+      console.error("Error exportando auditoría:", error);
+      toast({
+        variant: "destructive",
+        title: "Error Técnico",
+        description: "No se pudo procesar el archivo Excel."
+      });
+    }
+  }
+
   const totalMonthly = invoices?.reduce((acc, inv) => acc + Number(inv.total || 0), 0) || 0
 
   return (
@@ -122,8 +170,12 @@ export default function InvoicesPage() {
           </p>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none rounded-xl h-12 border-slate-200 font-black text-[10px] uppercase tracking-widest px-8 shadow-sm">
-            <Download className="mr-2 h-4 w-4" /> Exportar Auditoría
+          <Button 
+            variant="outline" 
+            className="flex-1 md:flex-none rounded-xl h-12 border-slate-200 font-black text-[10px] uppercase tracking-widest px-8 shadow-sm"
+            onClick={handleExportExcel}
+          >
+            <Download className="mr-2 h-4 w-4 text-emerald-500" /> Exportar Auditoría
           </Button>
           <Button className="flex-1 md:flex-none bg-primary hover:bg-primary/90 rounded-xl h-12 font-black text-[10px] uppercase tracking-widest px-8 shadow-xl shadow-primary/20">
             <Printer className="mr-2 h-4 w-4" /> Imprimir Cierre

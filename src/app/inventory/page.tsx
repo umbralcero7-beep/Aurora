@@ -16,7 +16,6 @@ import {
   Wrench,
   DollarSign,
   Calendar,
-  Clock,
   CheckCircle2,
   AlertCircle,
   TrendingUp,
@@ -184,12 +183,8 @@ export default function InventoryPage() {
     if (!db || previewData.length === 0 || !effectiveBusinessId) return;
     setImporting(true);
     try {
-      const { writeBatch, doc, collection } = await import("firebase/firestore");
-      const batch = writeBatch(db);
-      
       for (const item of previewData) {
-        const newDocRef = doc(collection(db, "supplies"));
-        batch.set(newDocRef, {
+        await addDoc(collection(db, "supplies"), {
           name: item.Insumo || item.Nombre || "Sin nombre",
           sku: item.SKU || "S/N",
           unit: item.Unidad || "Unid",
@@ -202,16 +197,11 @@ export default function InventoryPage() {
           createdAt: new Date().toISOString(),
         });
       }
-      
-      await batch.commit();
-      toast({ title: "Carga Exitosa", description: `${previewData.length} Activos inyectados con éxito.` });
+      toast({ title: "Carga Exitosa", description: "Activos inyectados." });
       setIsImportOpen(false);
       setPreviewData([]);
       setAnalysisResult(null);
-    } catch (e) { 
-      console.error(e);
-      toast({ variant: "destructive", title: "Error de Carga", description: "No se pudo completar la inyección masiva." });
-    } finally { setImporting(false); }
+    } catch (e) { console.error(e); } finally { setImporting(false); }
   };
 
   const filteredSupplies = supplies?.filter(p => {
@@ -333,65 +323,6 @@ export default function InventoryPage() {
                  </div>
                </Card>
              ))}
-          </div>
-        </TabsContent>
-        <TabsContent value="logistics" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="rounded-[2.5rem] border-slate-100 shadow-xl overflow-hidden bg-white">
-              <CardHeader className="bg-slate-50/50 p-8">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Truck className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-black uppercase">Rutas de Abastecimiento</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Próximas entregas programadas</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                {[
-                  { provider: "Distribuidora Nacional", status: "En camino", eta: "2h 15m", icon: Zap },
-                  { provider: "Fruver Premium", status: "Programado", eta: "Mañana 08:00 AM", icon: Clock }
-                ].map((shipment, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                        <shipment.icon className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <div>
-                        <p className="font-black text-xs uppercase text-slate-900">{shipment.provider}</p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{shipment.status}</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-white text-slate-900 border-slate-200 font-black text-[9px]">{shipment.eta}</Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-[2.5rem] border-slate-100 shadow-xl overflow-hidden bg-white">
-              <CardHeader className="bg-slate-50/50 p-8">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-2xl bg-secondary/10 flex items-center justify-center text-secondary">
-                    <History className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg font-black uppercase">KPIs Logísticos</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold tracking-widest">Eficiencia de entrega por sede</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 flex items-center justify-center min-h-[200px]">
-                <div className="text-center space-y-4">
-                  <div className="text-5xl font-black text-slate-900 tracking-tighter">98%</div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Entregas a tiempo este mes</p>
-                  <div className="h-2 w-48 bg-slate-100 rounded-full overflow-hidden mx-auto">
-                    <div className="h-full bg-emerald-500 w-[98%] shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </TabsContent>
       </Tabs>

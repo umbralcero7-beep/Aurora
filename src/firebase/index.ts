@@ -1,70 +1,69 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import {
-  initializeFirestore,
-  getFirestore,
+import { getAuth, Auth } from 'firebase/auth';
+import { 
+  getFirestore, 
+  initializeFirestore, 
+  persistentLocalCache, 
   persistentMultipleTabManager,
-  persistentLocalCache,
-  CACHE_SIZE_UNLIMITED
+  Firestore,
+  memoryLocalCache
 } from 'firebase/firestore';
 
-let firestoreInitialized = false;
+// Singleton para mantener las instancias y evitar re-inicializaciones costosas
+let sdkInstance: { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore } | null = null;
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
-  if (!getApps().length) {
-    // Important! initializeApp() is called without any arguments because Firebase App Hosting
-    // integrates with the initializeApp() function to provide the environment variables needed to
-    // populate the FirebaseOptions in production. It is critical that we attempt to call initializeApp()
-    // without arguments.
-    let firebaseApp;
-    try {
-      // Attempt to initialize via Firebase App Hosting environment variables
-      firebaseApp = initializeApp();
-    } catch (e) {
-      // Only warn in production because it's normal to use the firebaseConfig to initialize
-      // during development
-      if (process.env.NODE_ENV === "production") {
-        console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
-      }
-      firebaseApp = initializeApp(firebaseConfig);
-    }
+  // Patrón singleton para evitar múltiples inicializaciones en entornos SSR/HMR
+  if (sdkInstance) return sdkInstance;
 
-    return getSdks(firebaseApp);
+  let firebaseApp: FirebaseApp;
+  
+  if (!getApps().length) {
+    try {
+      firebaseApp = initializeApp(firebaseConfig);
+    } catch (e) {
+      firebaseApp = getApp();
+    }
+  } else {
+    firebaseApp = getApp();
   }
 
-  // If already initialized, return the SDKs with the already initialized App
-  return getSdks(getApp());
-}
+  const isBrowser = typeof window !== 'undefined';
+  let firestore: Firestore;
 
-export function getSdks(firebaseApp: FirebaseApp) {
-  const auth = getAuth(firebaseApp);
-
-  // Usar la nueva API de cache (reemplaza enableMultiTabIndexedDbPersistence)
-  // Solo inicializamos Firestore con la nueva API una vez para evitar errores de re-inicialización
-  let firestore;
-  if (!firestoreInitialized && typeof window !== 'undefined') {
+  if (isBrowser) {
     try {
+      // Configuración de persistencia exclusiva para el navegador (Modo Offline)
       firestore = initializeFirestore(firebaseApp, {
         localCache: persistentLocalCache({
-          cacheSizeBytes: CACHE_SIZE_UNLIMITED,
-          tabManager: persistentMultipleTabManager()
-        })
+          tabManager: persistentMultipleTabManager(),
+        }),
       });
-      firestoreInitialized = true;
-    } catch {
-      // Si ya fue inicializado (recarga de módulo), obtener la instancia existente
+    } catch (e) {
+      // Fallback si ya está inicializado o falla el acceso a IndexedDB
       firestore = getFirestore(firebaseApp);
     }
   } else {
-    firestore = getFirestore(firebaseApp);
+    // Configuración para el servidor (SSR): Solo memoria para evitar errores de hidratación
+    try {
+      firestore = initializeFirestore(firebaseApp, {
+        localCache: memoryLocalCache(),
+      });
+    } catch (e) {
+      firestore = getFirestore(firebaseApp);
+    }
   }
 
-  return { firebaseApp, auth, firestore };
+  sdkInstance = {
+    firebaseApp,
+    auth: getAuth(firebaseApp),
+    firestore
+  };
+
+  return sdkInstance;
 }
 
 export * from './provider';
