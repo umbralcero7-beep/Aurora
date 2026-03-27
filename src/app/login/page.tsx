@@ -91,7 +91,7 @@ export default function LoginPage() {
       const userDocRef = doc(db, 'users', emailLower);
       const userDoc = await getDoc(userDocRef);
 
-      const isSuperUser = emailLower === 'umbralcero7@gmail.com';
+      const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
 
       if (!userDoc.exists() && !isSuperUser) {
         setError(language === 'es' 

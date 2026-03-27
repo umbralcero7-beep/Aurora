@@ -69,7 +69,7 @@ export default function HRDashboardPage() {
   }, [])
 
   const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com';
+  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;

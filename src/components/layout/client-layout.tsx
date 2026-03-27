@@ -35,7 +35,10 @@ function MobileBottomNav() {
   }, [db, user?.email]);
 
   const { data: profile } = useDoc(userProfileRef);
-  const role = profile?.role || 'WAITER';
+  
+  const emailLower = user?.email?.toLowerCase();
+  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const role = isSuperUser ? 'SUPPORT' : (profile?.role || 'WAITER');
 
   // Solo mostrar para roles operativos en móvil
   const navItems = [
@@ -110,6 +113,9 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isMounted && user && profile) {
+      const emailCheck = user?.email?.toLowerCase();
+      const isSuperUser = emailCheck === 'umbralcero7@gmail.com' || emailCheck === 'amaroisaias611@gmail.com';
+      if (isSuperUser) return;
       if (profile.role === 'WAITER' && pathname === '/') {
         router.push('/comandas');
       } else if (profile.role === 'RECEPTIONIST' && pathname === '/') {

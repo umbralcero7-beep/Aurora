@@ -75,7 +75,7 @@ export default function UserManagementPage() {
   const [businessId, setBusinessId] = useState('');
 
   const emailLower = currentUser?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com';
+  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
 
   const usersRef = useMemoFirebase(() => {
     if (!db) return null;

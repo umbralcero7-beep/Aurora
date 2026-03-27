@@ -7,10 +7,17 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data;
     }
 
+    // Verificación directa de super usuario por email (no depende del documento de perfil)
+    function isSuperUser() {
+      return request.auth.token.email.lower() == 'umbralcero7@gmail.com' 
+             || request.auth.token.email.lower() == 'amaroisaias611@gmail.com';
+    }
+
     // Función para verificar si el usuario pertenece al comercio (Multi-tenant isolation)
     function belongsToBusiness(data) {
+      if (isSuperUser()) { return true; }
       let profile = getProfile();
-      return profile.businessId == data.businessId || profile.role == 'SUPPORT';
+      return profile != null && (profile.businessId == data.businessId || profile.role == 'SUPPORT');
     }
 
     // Reglas para la colección de usuarios
@@ -18,10 +25,10 @@ service cloud.firestore {
       // Cualquiera puede ver si un usuario existe para el White-list inicial
       allow get: if true;
       // Solo el dueño o soporte puede leer el perfil completo
-      allow read: if request.auth != null && (request.auth.token.email.lower() == email.lower() || getProfile().role == 'SUPPORT');
+      allow read: if request.auth != null && (request.auth.token.email.lower() == email.lower() || isSuperUser() || getProfile().role == 'SUPPORT');
       // Solo el dueño puede crear/editar su perfil, pero NO cambiar su propio ROL (prevención de escalada)
-      allow write: if request.auth != null && request.auth.token.email.lower() == email.lower() && 
-                    (request.resource.data.role == resource.data.role || getProfile().role == 'SUPPORT');
+      allow write: if request.auth != null && (request.auth.token.email.lower() == email.lower() || isSuperUser()) && 
+                    (resource == null || request.resource.data.role == resource.data.role || isSuperUser() || getProfile().role == 'SUPPORT');
     }
 
     // Reglas para Facturas (Invoices)
@@ -29,7 +36,7 @@ service cloud.firestore {
       allow read: if request.auth != null && belongsToBusiness(resource.data);
       // Solo ADMIN, CASHIER o SUPPORT pueden emitir/editar facturas
       allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
-                    getProfile().role in ['ADMIN', 'CASHIER', 'SUPPORT'];
+                    (isSuperUser() || getProfile().role in ['ADMIN', 'CASHIER', 'SUPPORT']);
     }
 
     // Reglas para el Menú
@@ -37,14 +44,14 @@ service cloud.firestore {
       allow read: if request.auth != null && belongsToBusiness(resource.data);
       // Solo ADMIN o SUPPORT pueden modificar el menú/precios
       allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
-                    getProfile().role in ['ADMIN', 'SUPPORT'];
+                    (isSuperUser() || getProfile().role in ['ADMIN', 'SUPPORT']);
     }
 
     // Reglas para Insumos/Suministros
     match /supplies/{supplyId} {
       allow read: if request.auth != null && belongsToBusiness(resource.data);
       allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
-                    getProfile().role in ['ADMIN', 'SUPPORT'];
+                    (isSuperUser() || getProfile().role in ['ADMIN', 'SUPPORT']);
     }
 
     // Reglas para Comandas/Órdenes
@@ -52,14 +59,14 @@ service cloud.firestore {
       allow read: if request.auth != null && belongsToBusiness(resource.data);
       // Meseros (WAITER) pueden crear órdenes, Kitchen (CHEF) puede editarlas
       allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
-                    getProfile().role in ['ADMIN', 'WAITER', 'CHEF', 'SUPPORT'];
+                    (isSuperUser() || getProfile().role in ['ADMIN', 'WAITER', 'CHEF', 'SUPPORT']);
     }
 
     // Regla de respaldo: Denegar todo lo demás por defecto.
     // NOTA: collection_stream y otras colecciones internas del SDK son denegadas
     // naturalmente aquí. El SDK maneja estos errores de permiso de forma silenciosa.
     match /{document=**} {
-      allow read, write: if request.auth != null && getProfile().role == 'SUPPORT';
+      allow read, write: if request.auth != null && (isSuperUser() || getProfile().role == 'SUPPORT');
     }
   }
 }
