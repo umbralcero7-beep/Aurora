@@ -163,7 +163,6 @@ export default function POSPage() {
       }
       return [...prev, { id: item.id, name: item.name, price: Number(item.price), quantity: 1 }]
     })
-    setShowCheckoutMobile(true)
     toast({ title: "Agregado", description: item.name, duration: 500 })
   }
 
@@ -478,10 +477,7 @@ export default function POSPage() {
                       <Switch 
                         id="electronic-toggle"
                         checked={isElectronic}
-                        onCheckedChange={(checked) => {
-                          setIsElectronic(checked)
-                          if (checked) setShowCheckoutMobile(true)
-                        }}
+                        onCheckedChange={setIsElectronic}
                         className="data-[state=checked]:bg-primary"
                       />
                     </div>
