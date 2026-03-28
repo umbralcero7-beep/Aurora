@@ -2,7 +2,7 @@
 "use client"
 
 import { isSuperUser } from '@/lib/constants';
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { 
   Search, 
   Loader2,
@@ -94,6 +94,7 @@ export default function POSPage() {
 
   // Facturación Electrónica State
   const [isElectronic, setIsElectronic] = useState(false)
+  const paymentSectionRef = useRef<HTMLDivElement>(null)
   const [customerData, setCustomerData] = useState({
     name: "",
     taxId: "",
@@ -104,6 +105,14 @@ export default function POSPage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (isElectronic && paymentSectionRef.current) {
+      setTimeout(() => {
+        paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 350)
+    }
+  }, [isElectronic])
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
@@ -537,7 +546,7 @@ export default function POSPage() {
                     )}
                   </div>
 
-                  <div className="p-4 space-y-4">
+                  <div ref={paymentSectionRef} className="p-4 space-y-4">
                     <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest text-center">Método de Recaudo</p>
                     <div className="grid grid-cols-3 gap-2">
                       {[
