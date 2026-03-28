@@ -95,6 +95,7 @@ export default function POSPage() {
   // Facturación Electrónica State
   const [isElectronic, setIsElectronic] = useState(false)
   const paymentSectionRef = useRef<HTMLDivElement>(null)
+  const checkoutScrollRef = useRef<React.ElementRef<typeof ScrollArea>>(null)
   const [customerData, setCustomerData] = useState({
     name: "",
     taxId: "",
@@ -107,18 +108,18 @@ export default function POSPage() {
   }, [])
 
   useEffect(() => {
-    if (isElectronic && paymentSectionRef.current) {
+    if (isElectronic && paymentSectionRef.current && checkoutScrollRef.current) {
       setTimeout(() => {
-        const target = paymentSectionRef.current
-        if (!target) return
-        const viewport = target.closest('[data-radix-scroll-area-viewport]')
+        const scrollRoot = checkoutScrollRef.current
+        if (!scrollRoot) return
+        const viewport = scrollRoot.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
         if (viewport) {
-          const targetRect = target.getBoundingClientRect()
+          const targetRect = paymentSectionRef.current!.getBoundingClientRect()
           const viewportRect = viewport.getBoundingClientRect()
-          const scrollOffset = targetRect.top - viewportRect.top + viewport.scrollTop - 8
-          viewport.scrollTo({ top: scrollOffset, behavior: 'smooth' })
+          const scrollAmount = targetRect.top - viewportRect.top + viewport.scrollTop - 16
+          viewport.scrollTo({ top: scrollAmount, behavior: 'smooth' })
         }
-      }, 350)
+      }, 400)
     }
   }, [isElectronic])
 
@@ -453,7 +454,7 @@ export default function POSPage() {
         </CardHeader>
 
         <CardContent className="flex-1 p-0 overflow-hidden flex flex-col bg-slate-50/20">
-          <ScrollArea className="flex-1">
+          <ScrollArea ref={checkoutScrollRef} className="flex-1">
             <div className="divide-y divide-slate-100">
               <div className="p-4 bg-white space-y-3">
                 <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest border-b pb-1.5 flex justify-between">
