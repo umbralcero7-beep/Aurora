@@ -4,14 +4,25 @@
   "description": "Sistema Operativo Gastronómico Avanzado",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
+  "scope": "/",
   "icons": [
     {
       "src": "/icon.svg",
-      "sizes": "192x192 512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["business", "food"],
+  "lang": "es",
+  "dir": "ltr"
 }

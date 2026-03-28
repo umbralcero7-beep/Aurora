@@ -96,6 +96,12 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsMounted(true);
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
     if (typeof navigator !== 'undefined') {
       setIsOnline(navigator.onLine);
       

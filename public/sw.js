@@ -1,15 +1,13 @@
-const CACHE_NAME = "aurora-os-v3";
+const CACHE_NAME = "aurora-os-v4";
 const ASSETS_TO_CACHE = [
   "/",
   "/manifest.json",
   "/icon.svg"
 ];
 
-// Instalar y pre-cachear activos críticos de forma resiliente
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Cacheamos cada asset individualmente para que un fallo no interrumpa el install
       return Promise.allSettled(
         ASSETS_TO_CACHE.map(url =>
           cache.add(url).catch(err => console.warn(`[SW] No se pudo cachear ${url}:`, err))
@@ -20,7 +18,6 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Limpiar cachés antiguos
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -36,20 +33,32 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Estrategia: Stale-While-Revalidate para activos estáticos y Network-First para el resto
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // No cachear llamadas a Firebase/API
-  if (url.origin !== self.location.origin || url.pathname.includes('/api/')) {
+  if (url.origin !== self.location.origin) return;
+
+  // Network first for navigation (pages)
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
+    );
     return;
   }
+
+  // Cache first for static assets, network first for API
+  if (url.pathname.includes("/api/")) return;
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request).then((networkResponse) => {
-        // Solo cachear respuestas exitosas de nuestro propio dominio
         if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -57,10 +66,7 @@ self.addEventListener("fetch", (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Fallback si falla la red y no hay caché
-        return cachedResponse;
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })
