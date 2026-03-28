@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useFirestore, useCollection } from '@/firebase'
 import { collection, query, where, updateDoc, doc } from 'firebase/firestore'
 import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 export function DianSyncService() {
   const db = useFirestore()
@@ -39,7 +40,7 @@ export function DianSyncService() {
 
     for (const inv of pendingInvoices) {
       try {
-        console.log(`Sincronizando factura ${inv.id} con DIAN...`)
+        logger.info(`Sincronizando factura ${inv.id} con DIAN`, 'DIAN')
         
         // Simulación de envío a DIAN (Aquí iría la llamada a la API DIAN/UBL)
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -57,7 +58,7 @@ export function DianSyncService() {
           variant: "default"
         })
       } catch (error) {
-        console.error("Error sincronizando con DIAN:", error)
+        logger.error("Error sincronizando con DIAN", "DIAN", error)
       }
     }
   }

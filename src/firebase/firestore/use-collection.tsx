@@ -12,6 +12,7 @@ import {
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { isMemoized } from '../provider';
+import { logger } from '@/lib/logger';
 
 export type WithId<T> = T & { id: string };
 
@@ -52,7 +53,7 @@ export function useCollection<T = any>(
       },
       (err: FirestoreError) => {
         // Manejo silencioso y seguro de errores para evitar "Application error"
-        console.warn("Firestore Sync Status:", err.code);
+        logger.warn("Sync status", "Firestore", err.code);
         
         // Creamos un error contextual seguro sin acceder a propiedades privadas
         const contextualError = new FirestorePermissionError({
@@ -77,7 +78,7 @@ export function useCollection<T = any>(
 
   if (memoizedTargetRefOrQuery && !isMemoized(memoizedTargetRefOrQuery)) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('Firestore reference or query was not properly memoized using useMemoFirebase');
+      logger.warn('Reference or query was not properly memoized using useMemoFirebase', 'Firestore');
     }
   }
 

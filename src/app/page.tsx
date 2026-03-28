@@ -27,6 +27,7 @@ import {
   Truck,
   FileSpreadsheet
 } from "lucide-react"
+import { isSuperUser } from '@/lib/constants';
 import { 
   Card, 
   CardContent, 
@@ -75,9 +76,8 @@ export default function Dashboard() {
   }, [db, user?.email]);
 
   const { data: profile } = useDoc(userProfileRef);
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
-  const businessId = profile?.businessId || (isSuperUser ? 'matu' : null);
+  const isSuper = isSuperUser(user?.email);
+  const businessId = profile?.businessId || (isSuper ? 'matu' : null);
 
   const fiscalReportsRef = useMemoFirebase(() => {
     if (!db || !businessId) return null

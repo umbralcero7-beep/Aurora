@@ -21,8 +21,10 @@ import {
   ChefHat 
 } from "lucide-react";
 import { Logo } from '@/components/ui/logo';
+import { isSuperUser } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 function MobileBottomNav() {
   const pathname = usePathname();
@@ -36,9 +38,8 @@ function MobileBottomNav() {
 
   const { data: profile } = useDoc(userProfileRef);
   
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
-  const role = isSuperUser ? 'SUPPORT' : (profile?.role || 'WAITER');
+  const isSuper = isSuperUser(user?.email);
+  const role = isSuper ? 'SUPPORT' : (profile?.role || 'WAITER');
 
   // Solo mostrar para roles operativos en móvil
   const navItems = [
@@ -113,9 +114,8 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isMounted && user && profile) {
-      const emailCheck = user?.email?.toLowerCase();
-      const isSuperUser = emailCheck === 'umbralcero7@gmail.com' || emailCheck === 'amaroisaias611@gmail.com';
-      if (isSuperUser) return;
+      const isSuper = isSuperUser(user?.email);
+      if (isSuper) return;
       if (profile.role === 'WAITER' && pathname === '/') {
         router.push('/comandas');
       } else if (profile.role === 'RECEPTIONIST' && pathname === '/') {
@@ -196,7 +196,9 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           )}
           
           <div className="flex-1 w-full max-w-[1600px] mx-auto p-0 overflow-y-auto scroll-smooth pb-20 md:pb-0">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </div>
 
           {/* Mobile Navigator Bar */}

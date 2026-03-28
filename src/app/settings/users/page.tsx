@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { isSuperUser } from '@/lib/constants';
 import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { useLanguage } from '@/context/language-context';
 import { Button } from '@/components/ui/button';
@@ -74,8 +75,7 @@ export default function UserManagementPage() {
   const [role, setRole] = useState('WAITER');
   const [businessId, setBusinessId] = useState('');
 
-  const emailLower = currentUser?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const isSuper = isSuperUser(currentUser?.email);
 
   const usersRef = useMemoFirebase(() => {
     if (!db) return null;
@@ -280,7 +280,7 @@ export default function UserManagementPage() {
                         <SelectItem value="WAITER" className="font-bold text-xs uppercase py-3">Mesero</SelectItem>
                         <SelectItem value="CASHIER" className="font-bold text-xs uppercase py-3">Cajero</SelectItem>
                         <SelectItem value="RECEPTIONIST" className="font-bold text-xs uppercase py-3">Recepcionista</SelectItem>
-                        {isSuperUser && <SelectItem value="SUPPORT" className="font-bold text-xs uppercase py-3 text-secondary">Soporte Global</SelectItem>}
+                        {isSuper && <SelectItem value="SUPPORT" className="font-bold text-xs uppercase py-3 text-secondary">Soporte Global</SelectItem>}
                       </SelectContent>
                     </Select>
                   </div>

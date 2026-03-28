@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
+import { isSuperUser } from '@/lib/constants';
 import { doc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { useLanguage } from '@/context/language-context';
 import { Button } from '@/components/ui/button';
@@ -117,11 +118,10 @@ export default function SettingsPage() {
   const { data: profile } = useDoc(userProfileRef);
   const { data: config } = useDoc(configRef);
 
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
-  const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
-  const effectiveVenueName = profile?.assignedVenue || (isSuperUser ? 'Matu' : 'Sede Central');
-  const isSupport = profile?.role === 'SUPPORT' || isSuperUser;
+  const isSuper = isSuperUser(user?.email);
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
+  const effectiveVenueName = profile?.assignedVenue || (isSuper ? 'Matu' : 'Sede Central');
+  const isSupport = profile?.role === 'SUPPORT' || isSuper;
 
   const [formData, setFormData] = useState({
     businessName: '',

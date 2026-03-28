@@ -1,5 +1,6 @@
 "use client"
 
+import { isSuperUser } from '@/lib/constants';
 import { useState, useEffect, useMemo } from "react"
 import { 
   DollarSign, 
@@ -70,8 +71,7 @@ export default function ReportsPage() {
     setMounted(true)
   }, [])
 
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const isSuper = isSuperUser(user?.email);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
@@ -80,8 +80,8 @@ export default function ReportsPage() {
 
   const { data: profile } = useDoc(userProfileRef);
 
-  const isSupport = profile?.role === 'SUPPORT' || isSuperUser;
-  const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
+  const isSupport = profile?.role === 'SUPPORT' || isSuper;
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
   const effectiveVenueName = isSupport ? 'GLOBAL HQ' : (profile?.assignedVenue || 'Sede Central');
 
   const fiscalReportsRef = useMemoFirebase(() => {

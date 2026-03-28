@@ -1,6 +1,7 @@
 
 "use client"
 
+import { isSuperUser } from '@/lib/constants';
 import { useState } from "react"
 import { 
   Puzzle, 
@@ -62,9 +63,8 @@ export default function MarketplacePage() {
 
   const { data: profile } = useDoc(userProfileRef)
   
-  const emailLower = user?.email?.toLowerCase()
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com'
-  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPPORT' || isSuperUser
+  const isSuper = isSuperUser(user?.email)
+  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'SUPPORT' || isSuper
 
   const extensions = [
     {

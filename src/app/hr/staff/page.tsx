@@ -1,6 +1,7 @@
 
 "use client"
 
+import { isSuperUser } from '@/lib/constants';
 import { useState, useMemo, useRef, useEffect } from "react"
 import { 
   Users, 
@@ -111,8 +112,7 @@ export default function StaffDirectoryPage() {
     }))
   }, [])
 
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const isSuper = isSuperUser(user?.email);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
@@ -121,8 +121,8 @@ export default function StaffDirectoryPage() {
 
   const { data: profile } = useDoc(userProfileRef);
 
-  const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
-  const effectiveVenueName = isSuperUser ? 'GLOBAL HQ' : (profile?.assignedVenue || 'Sede Central');
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
+  const effectiveVenueName = isSuper ? 'GLOBAL HQ' : (profile?.assignedVenue || 'Sede Central');
 
   const staffRef = useMemoFirebase(() => {
     if (!db || !effectiveBusinessId) return null

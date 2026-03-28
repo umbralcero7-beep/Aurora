@@ -53,6 +53,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Logo } from "@/components/ui/logo"
 import { Badge } from "@/components/ui/badge"
+import { isSuperUser } from '@/lib/constants';
 import { cn } from "@/lib/utils"
 
 export function AppSidebar() {
@@ -97,12 +98,11 @@ export function AppSidebar() {
 
   const { data: profile } = useDoc(userProfileRef)
   
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const isSuper = isSuperUser(user?.email);
   
-  const role = isSuperUser ? 'SUPPORT' : (profile?.role || 'WAITER');
+  const role = isSuper ? 'SUPPORT' : (profile?.role || 'WAITER');
   const isSupport = role === 'SUPPORT';
-  const businessId = profile?.businessId || (isSuperUser ? 'matu' : null);
+  const businessId = profile?.businessId || (isSuper ? 'matu' : null);
   
   const venueDisplay = isSupport ? "Aurora Global" : (profile?.assignedVenue || "Aurora OS");
 

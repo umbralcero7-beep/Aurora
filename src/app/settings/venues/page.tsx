@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { isSuperUser } from '@/lib/constants';
 import { collection, doc, setDoc, serverTimestamp, query, orderBy, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,9 +68,8 @@ export default function VenuesManagementPage() {
   }, [db, user?.email]);
   const { data: profile } = useDoc(userProfileRef);
   
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
-  const isSupport = profile?.role === 'SUPPORT' || isSuperUser;
+  const isSuper = isSuperUser(user?.email);
+  const isSupport = profile?.role === 'SUPPORT' || isSuper;
 
   const venuesRef = useMemoFirebase(() => {
     if (!db) return null;

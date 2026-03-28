@@ -1,5 +1,6 @@
 'use client';
 
+import { isSuperUser } from '@/lib/constants';
 import { useState, useEffect } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { 
@@ -91,9 +92,9 @@ export default function LoginPage() {
       const userDocRef = doc(db, 'users', emailLower);
       const userDoc = await getDoc(userDocRef);
 
-      const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+      const isSuper = isSuperUser(emailLower);
 
-      if (!userDoc.exists() && !isSuperUser) {
+      if (!userDoc.exists() && !isSuper) {
         setError(language === 'es' 
           ? "Este correo no ha sido autorizado en la white-list." 
           : "This email hasn't been whitelisted.");

@@ -1,5 +1,6 @@
 "use client"
 
+import { isSuperUser } from '@/lib/constants';
 import { useState, useMemo, useEffect } from "react"
 import { 
   FileText, 
@@ -105,9 +106,8 @@ export default function FiscalControlPage() {
 
   const { data: profile } = useDoc(userProfileRef);
 
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
-  const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
+  const isSuper = isSuperUser(user?.email);
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
 
   const invoicesRef = useMemoFirebase(() => {

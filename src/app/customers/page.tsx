@@ -1,6 +1,7 @@
 
 "use client"
 
+import { isSuperUser } from '@/lib/constants';
 import { useState } from "react"
 import { 
   Users, 
@@ -64,8 +65,7 @@ export default function CustomersPage() {
   const [newName, setNewName] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const isSuper = isSuperUser(user?.email);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
@@ -74,8 +74,8 @@ export default function CustomersPage() {
 
   const { data: profile } = useDoc(userProfileRef);
 
-  const isSupport = profile?.role === 'SUPPORT' || isSuperUser;
-  const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
+  const isSupport = profile?.role === 'SUPPORT' || isSuper;
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
   const effectiveVenueName = isSupport ? 'TODAS LAS SEDES' : (profile?.assignedVenue || 'Sede Central');
 
   const customersRef = useMemoFirebase(() => {

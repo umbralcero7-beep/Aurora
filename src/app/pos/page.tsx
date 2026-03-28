@@ -1,6 +1,7 @@
 
 "use client"
 
+import { isSuperUser } from '@/lib/constants';
 import { useState, useMemo, useEffect } from "react"
 import { 
   Search, 
@@ -111,10 +112,9 @@ export default function POSPage() {
 
   const { data: profile } = useDoc(userProfileRef);
   
-  const emailLower = user?.email?.toLowerCase();
-  const isSuperUser = emailLower === 'umbralcero7@gmail.com' || emailLower === 'amaroisaias611@gmail.com';
+  const isSuper = isSuperUser(user?.email);
   
-  const effectiveBusinessId = profile?.businessId || (isSuperUser ? 'matu' : null);
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
 
   const openOrdersQuery = useMemoFirebase(() => {
