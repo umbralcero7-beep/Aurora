@@ -23,7 +23,15 @@ export const translations = {
       fiscalControl: "Tax Control",
       customers: "Customers",
       marketplace: "Extensions",
-      help: "Help Center"
+      help: "Help Center",
+      costs: "Costs ERP",
+      venues: "Venues",
+    },
+    navGroups: {
+      operations: "Operations",
+      finance: "Finance",
+      administration: "Administration",
+      system: "System",
     },
     hr: {
       title: "Deep HR • Talent Management",
@@ -147,7 +155,15 @@ export const translations = {
       fiscalControl: "Control Fiscal",
       customers: "Clientes",
       marketplace: "Extensiones",
-      help: "Centro de Ayuda"
+      help: "Centro de Ayuda",
+      costs: "Costos ERP",
+      venues: "Sedes",
+    },
+    navGroups: {
+      operations: "Operaciones",
+      finance: "Finanzas",
+      administration: "Administración",
+      system: "Sistema",
     },
     hr: {
       title: "Deep HR • Talento Humano",
