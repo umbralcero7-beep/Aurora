@@ -163,6 +163,7 @@ export default function POSPage() {
       }
       return [...prev, { id: item.id, name: item.name, price: Number(item.price), quantity: 1 }]
     })
+    setShowCheckoutMobile(true)
     toast({ title: "Agregado", description: item.name, duration: 500 })
   }
 
@@ -401,7 +402,9 @@ export default function POSPage() {
               <div className="flex items-center gap-3">
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 <div className="flex flex-col items-start">
-                  <span className="text-[7px] font-black uppercase text-slate-400 tracking-widest">Proceder</span>
+                  <span className="text-[7px] font-black uppercase text-slate-400 tracking-widest">
+                    {isElectronic ? "Factura Electrónica" : "Proceder"} · {directCart.reduce((a, i) => a + i.quantity, 0)} items
+                  </span>
                   <span className="text-sm font-black text-white">{formatCurrencyDetailed(currentTotal)}</span>
                 </div>
               </div>
@@ -417,6 +420,9 @@ export default function POSPage() {
       )}>
         <CardHeader className="bg-slate-900 text-white p-4 flex flex-row justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
+            <Button variant="ghost" className="lg:hidden h-8 w-8 text-white/70 p-0 mr-1" onClick={() => setShowCheckoutMobile(false)}>
+              <ArrowLeftRight className="h-4 w-4" />
+            </Button>
             <Receipt className="h-5 w-5 text-primary" />
             <div>
               <CardTitle className="text-sm font-black uppercase tracking-tighter">
@@ -425,7 +431,9 @@ export default function POSPage() {
               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest italic">Cierre Fiscal</p>
             </div>
           </div>
-          <Button variant="ghost" className="lg:hidden h-8 w-8 text-white/50 p-0" onClick={() => setShowCheckoutMobile(false)}><X className="h-5 w-5" /></Button>
+          <Button variant="ghost" className="lg:hidden text-white/70 font-black text-[8px] uppercase tracking-widest h-8 px-3 gap-1" onClick={() => setShowCheckoutMobile(false)}>
+            <Plus className="h-3 w-3" /> Menú
+          </Button>
         </CardHeader>
 
         <CardContent className="flex-1 p-0 overflow-hidden flex flex-col bg-slate-50/20">
@@ -470,7 +478,10 @@ export default function POSPage() {
                       <Switch 
                         id="electronic-toggle"
                         checked={isElectronic}
-                        onCheckedChange={setIsElectronic}
+                        onCheckedChange={(checked) => {
+                          setIsElectronic(checked)
+                          if (checked) setShowCheckoutMobile(true)
+                        }}
                         className="data-[state=checked]:bg-primary"
                       />
                     </div>
