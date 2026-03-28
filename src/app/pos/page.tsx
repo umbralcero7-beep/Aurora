@@ -109,7 +109,15 @@ export default function POSPage() {
   useEffect(() => {
     if (isElectronic && paymentSectionRef.current) {
       setTimeout(() => {
-        paymentSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        const target = paymentSectionRef.current
+        if (!target) return
+        const viewport = target.closest('[data-radix-scroll-area-viewport]')
+        if (viewport) {
+          const targetRect = target.getBoundingClientRect()
+          const viewportRect = viewport.getBoundingClientRect()
+          const scrollOffset = targetRect.top - viewportRect.top + viewport.scrollTop - 8
+          viewport.scrollTo({ top: scrollOffset, behavior: 'smooth' })
+        }
       }, 350)
     }
   }, [isElectronic])
