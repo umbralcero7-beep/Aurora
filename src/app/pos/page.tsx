@@ -108,18 +108,15 @@ export default function POSPage() {
   }, [])
 
   useEffect(() => {
-    if (isElectronic && paymentSectionRef.current && checkoutScrollRef.current) {
+    if (isElectronic && checkoutScrollRef.current) {
       setTimeout(() => {
         const scrollRoot = checkoutScrollRef.current
         if (!scrollRoot) return
         const viewport = scrollRoot.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
         if (viewport) {
-          const targetRect = paymentSectionRef.current!.getBoundingClientRect()
-          const viewportRect = viewport.getBoundingClientRect()
-          const scrollAmount = targetRect.top - viewportRect.top + viewport.scrollTop - 16
-          viewport.scrollTo({ top: scrollAmount, behavior: 'smooth' })
+          viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' })
         }
-      }, 400)
+      }, 350)
     }
   }, [isElectronic])
 
@@ -432,7 +429,7 @@ export default function POSPage() {
       </div>
 
       <Card className={cn(
-        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl bg-white z-30",
+        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl bg-white z-30 min-h-0",
         showCheckoutMobile ? "fixed inset-0 h-full w-full" : "hidden lg:flex"
       )}>
         <CardHeader className="bg-slate-900 text-white p-4 flex flex-row justify-between items-center shrink-0">
@@ -453,8 +450,8 @@ export default function POSPage() {
           </Button>
         </CardHeader>
 
-        <CardContent className="flex-1 p-0 overflow-hidden flex flex-col bg-slate-50/20">
-          <ScrollArea ref={checkoutScrollRef} className="flex-1">
+        <CardContent className="flex-1 min-h-0 p-0 overflow-hidden flex flex-col bg-slate-50/20">
+          <ScrollArea ref={checkoutScrollRef} className="flex-1 min-h-0">
             <div className="divide-y divide-slate-100">
               <div className="p-4 bg-white space-y-3">
                 <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest border-b pb-1.5 flex justify-between">
@@ -501,55 +498,43 @@ export default function POSPage() {
                     </div>
 
                     {isElectronic && (
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black uppercase text-slate-400 ml-1">Nombre / Razón Social</Label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                            <Input 
-                              placeholder="Ej: Juan Pérez o Empresa SAS" 
-                              className="h-10 pl-9 rounded-xl bg-white border-slate-100 text-[10px] font-bold uppercase"
-                              value={customerData.name}
-                              onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
-                            />
-                          </div>
+                      <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="col-span-2 relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                          <Input 
+                            placeholder="Nombre / Razón Social" 
+                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold uppercase"
+                            value={customerData.name}
+                            onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
+                          />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black uppercase text-slate-400 ml-1">NIT / RUT (Sin Guiones)</Label>
-                          <div className="relative">
-                            <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                            <Input 
-                              placeholder="900123456" 
-                              className="h-10 pl-9 rounded-xl bg-white border-slate-100 text-[10px] font-bold"
-                              value={customerData.taxId}
-                              onChange={(e) => setCustomerData({...customerData, taxId: e.target.value})}
-                            />
-                          </div>
+                        <div className="relative">
+                          <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                          <Input 
+                            placeholder="NIT / RUT" 
+                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold"
+                            value={customerData.taxId}
+                            onChange={(e) => setCustomerData({...customerData, taxId: e.target.value})}
+                          />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black uppercase text-slate-400 ml-1">Email de Envío</Label>
-                          <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                            <Input 
-                              type="email"
-                              placeholder="cliente@correo.com" 
-                              className="h-10 pl-9 rounded-xl bg-white border-slate-100 text-[10px] font-bold"
-                              value={customerData.email}
-                              onChange={(e) => setCustomerData({...customerData, email: e.target.value.toLowerCase()})}
-                            />
-                          </div>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                          <Input 
+                            type="email"
+                            placeholder="Email" 
+                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold"
+                            value={customerData.email}
+                            onChange={(e) => setCustomerData({...customerData, email: e.target.value.toLowerCase()})}
+                          />
                         </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[8px] font-black uppercase text-slate-400 ml-1">Dirección Fiscal</Label>
-                          <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                            <Input 
-                              placeholder="Calle 123 # 45-67" 
-                              className="h-10 pl-9 rounded-xl bg-white border-slate-100 text-[10px] font-bold uppercase"
-                              value={customerData.address}
-                              onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
-                            />
-                          </div>
+                        <div className="col-span-2 relative">
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                          <Input 
+                            placeholder="Dirección Fiscal" 
+                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold uppercase"
+                            value={customerData.address}
+                            onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
+                          />
                         </div>
                       </div>
                     )}
