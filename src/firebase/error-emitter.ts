@@ -1,5 +1,5 @@
 'use client';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, FirestoreOfflineError } from '@/firebase/errors';
 
 /**
  * Defines the shape of all possible events and their corresponding payload types.
@@ -7,6 +7,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
  */
 export interface AppEvents {
   'permission-error': FirestorePermissionError;
+  'offline-error': FirestoreOfflineError;
 }
 
 // A generic type for a callback function.

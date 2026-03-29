@@ -10,7 +10,7 @@ import {
   SetOptions,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import {FirestorePermissionError} from '@/firebase/errors';
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from '@/firebase/errors';
 
 /**
  * Initiates a setDoc operation for a document reference.
@@ -18,14 +18,18 @@ import {FirestorePermissionError} from '@/firebase/errors';
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   setDoc(docRef, data, options).catch(error => {
-    errorEmitter.emit(
-      'permission-error',
-      new FirestorePermissionError({
+    if (isOfflineError(error)) {
+      errorEmitter.emit('offline-error', new FirestoreOfflineError({
         path: docRef.path,
-        operation: 'write', // or 'create'/'update' based on options
+        operation: 'write',
+      }));
+    } else {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'write',
         requestResourceData: data,
-      })
-    )
+      }));
+    }
   })
   // Execution continues immediately
 }
@@ -39,14 +43,18 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   const promise = addDoc(colRef, data)
     .catch(error => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+      if (isOfflineError(error)) {
+        errorEmitter.emit('offline-error', new FirestoreOfflineError({
+          path: colRef.path,
+          operation: 'create',
+        }));
+      } else {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: colRef.path,
           operation: 'create',
           requestResourceData: data,
-        })
-      )
+        }));
+      }
     });
   return promise;
 }
@@ -59,14 +67,18 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
     .catch(error => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+      if (isOfflineError(error)) {
+        errorEmitter.emit('offline-error', new FirestoreOfflineError({
+          path: docRef.path,
+          operation: 'update',
+        }));
+      } else {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: docRef.path,
           operation: 'update',
           requestResourceData: data,
-        })
-      )
+        }));
+      }
     });
 }
 
@@ -78,12 +90,16 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   deleteDoc(docRef)
     .catch(error => {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+      if (isOfflineError(error)) {
+        errorEmitter.emit('offline-error', new FirestoreOfflineError({
           path: docRef.path,
           operation: 'delete',
-        })
-      )
+        }));
+      } else {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'delete',
+        }));
+      }
     });
 }

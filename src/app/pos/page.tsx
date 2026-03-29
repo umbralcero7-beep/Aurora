@@ -55,7 +55,7 @@ import { Label } from "@/components/ui/label"
 import { processElectronicInvoice } from "@/ai/flows/electronic-invoice-flow"
 import { useRouter } from "next/navigation"
 import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
 // Carta Aurora Precargada para Respaldo Demo
 const DEFAULT_MENU = [
@@ -237,21 +237,35 @@ export default function POSPage() {
 
     setDoc(invoiceRef, invoiceData)
       .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: invoiceRef.path,
-          operation: 'create',
-          requestResourceData: invoiceData
-        }))
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: invoiceRef.path,
+            operation: 'create',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: invoiceRef.path,
+            operation: 'create',
+            requestResourceData: invoiceData
+          }));
+        }
       })
     
     if (!isDirect && selectedOrder) {
       updateDoc(doc(db, "orders", selectedOrder.id), { status: "Closed" })
         .catch(async (err) => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `orders/${selectedOrder.id}`,
-            operation: 'update',
-            requestResourceData: { status: 'Closed' }
-          }))
+          if (isOfflineError(err)) {
+            errorEmitter.emit('offline-error', new FirestoreOfflineError({
+              path: `orders/${selectedOrder.id}`,
+              operation: 'update',
+            }));
+          } else {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: `orders/${selectedOrder.id}`,
+              operation: 'update',
+              requestResourceData: { status: 'Closed' }
+            }));
+          }
         })
     }
 

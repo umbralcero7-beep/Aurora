@@ -36,7 +36,7 @@ import { es, enUS } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
 export default function OrdersPage() {
   const { t, language } = useLanguage()
@@ -107,11 +107,18 @@ export default function OrdersPage() {
 
     updateDoc(doc(db, "orders", order.id), { status: newStatus })
       .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `orders/${order.id}`,
-          operation: 'update',
-          requestResourceData: { status: newStatus }
-        }))
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: `orders/${order.id}`,
+            operation: 'update',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `orders/${order.id}`,
+            operation: 'update',
+            requestResourceData: { status: newStatus }
+          }));
+        }
       })
     
     if (newStatus === "Ready") {
@@ -129,11 +136,18 @@ export default function OrdersPage() {
       
       setDoc(notifRef, notificationData)
         .catch(async (err) => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: notifRef.path,
-            operation: 'create',
-            requestResourceData: notificationData
-          }))
+          if (isOfflineError(err)) {
+            errorEmitter.emit('offline-error', new FirestoreOfflineError({
+              path: notifRef.path,
+              operation: 'create',
+            }));
+          } else {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: notifRef.path,
+              operation: 'create',
+              requestResourceData: notificationData
+            }));
+          }
         })
       
       toast({ title: "Notificación Enviada", description: `Mesa ${order.tableNumber} lista para servir.` })

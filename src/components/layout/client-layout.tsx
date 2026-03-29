@@ -213,7 +213,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
             <div className="bg-orange-500 text-white px-4 py-1.5 flex items-center justify-center animate-in slide-in-from-top duration-500 z-50 shadow-lg shrink-0">
               <div className="flex items-center gap-2 text-center">
                 <WifiOff className="h-2.5 w-2.5 animate-pulse" />
-                <span className="text-[7px] font-black uppercase tracking-[0.1em]">Modo Resguardo Local Activo</span>
+                <span className="text-[7px] font-black uppercase tracking-[0.1em]">Sin Conexión · Los datos se sincronizarán al reconectarse</span>
               </div>
             </div>
           )}

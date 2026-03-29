@@ -52,7 +52,7 @@ import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { formatDistanceToNow, format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
 import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
 const DEFAULT_MENU = [
   { id: 'p1', name: 'Hamburguesa Aurora', price: 35000, category: 'Platos Fuertes', available: true },
@@ -307,11 +307,18 @@ export default function DeliveriesPage() {
       })
       .catch(async (err) => {
         setIsFinishing(false);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: deliveryRef.path,
-          operation: 'create',
-          requestResourceData: orderData
-        }))
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: deliveryRef.path,
+            operation: 'create',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: deliveryRef.path,
+            operation: 'create',
+            requestResourceData: orderData
+          }));
+        }
       })
   }
 
@@ -325,11 +332,18 @@ export default function DeliveriesPage() {
 
     updateDoc(doc(db, "deliveries", deliveryId), updatePayload)
       .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `deliveries/${deliveryId}`,
-          operation: 'update',
-          requestResourceData: updatePayload
-        }))
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: `deliveries/${deliveryId}`,
+            operation: 'update',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `deliveries/${deliveryId}`,
+            operation: 'update',
+            requestResourceData: updatePayload
+          }));
+        }
       })
     toast({ title: "Estado Actualizado", description: `Pedido marcado como ${newStatus}.` })
   }

@@ -10,7 +10,7 @@ import {
   CollectionReference,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from '@/firebase/errors';
 import { isMemoized } from '../provider';
 import { logger } from '@/lib/logger';
 
@@ -55,6 +55,15 @@ export function useCollection<T = any>(
         // Manejo silencioso y seguro de errores para evitar "Application error"
         logger.warn("Sync status", "Firestore", err.code);
         
+        if (isOfflineError(err)) {
+          // Error de red/offline: no es un error de permisos
+          logger.info("Offline mode active", "Firestore");
+          setError(err);
+          setData([]); // Evitamos null para no romper mapeos de UI
+          setIsLoading(false);
+          return;
+        }
+
         // Creamos un error contextual seguro sin acceder a propiedades privadas
         const contextualError = new FirestorePermissionError({
           operation: 'list',

@@ -73,6 +73,10 @@ export default function LoginPage() {
         setError(language === 'es' 
           ? "Credenciales no válidas. Si es tu primera vez, pulsa 'Crear Perfil' abajo." 
           : "Invalid credentials. If it's your first time, click 'Create Profile' below.");
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setError(language === 'es' 
+          ? "Sin conexión a internet. Verifica tu red e intenta de nuevo." 
+          : "No internet connection. Check your network and try again.");
       } else {
         setError(language === 'es' ? "Error de conexión. Intenta más tarde." : "Connection error. Try again later.");
       }
@@ -117,6 +121,10 @@ export default function LoginPage() {
         setError(language === 'es' ? "Este correo ya está registrado." : "This email is already in use.");
       } else if (err.code === 'auth/weak-password') {
         setError(language === 'es' ? "La contraseña es muy débil (min. 6 caracteres)." : "Password is too weak.");
+      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setError(language === 'es' 
+          ? "Sin conexión a internet. Verifica tu red e intenta de nuevo." 
+          : "No internet connection. Check your network and try again.");
       } else {
         setError(err.message);
       }

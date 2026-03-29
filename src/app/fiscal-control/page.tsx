@@ -71,7 +71,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
 export default function FiscalControlPage() {
   const { language } = useLanguage()
@@ -355,9 +355,15 @@ export default function FiscalControlPage() {
         }
       })
       .catch(err => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-          path: `fiscal_reports/${finalReport.id}`, operation: 'create', requestResourceData: finalReport 
-        }));
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: `fiscal_reports/${finalReport.id}`, operation: 'create',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `fiscal_reports/${finalReport.id}`, operation: 'create', requestResourceData: finalReport
+          }));
+        }
       });
   }
 

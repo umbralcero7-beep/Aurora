@@ -40,7 +40,7 @@ import { collection, query, where, doc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { errorEmitter } from "@/firebase/error-emitter"
-import { FirestorePermissionError } from "@/firebase/errors"
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
 // Carta Aurora Precargada para Respaldo Demo
 const DEFAULT_MENU = [
@@ -169,11 +169,18 @@ export default function ComandasPage() {
 
     setDoc(orderRef, orderData)
       .catch(async (err) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: orderRef.path,
-          operation: 'create',
-          requestResourceData: orderData
-        }))
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: orderRef.path,
+            operation: 'create',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: orderRef.path,
+            operation: 'create',
+            requestResourceData: orderData
+          }));
+        }
       })
 
     toast({ title: "¡Éxito!", description: `Comanda #${orderNumber} enviada.` })

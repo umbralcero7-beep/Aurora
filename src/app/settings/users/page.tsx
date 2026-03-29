@@ -58,7 +58,7 @@ import { useToast } from "@/hooks/use-toast";
 import { validateUserAuthority } from "@/ai/flows/user-validation-flow";
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from '@/firebase/errors';
 
 export default function UserManagementPage() {
   const { t } = useLanguage();
@@ -118,12 +118,17 @@ export default function UserManagementPage() {
       };
 
       await setDoc(userRef, updateData, { merge: true }).catch(async (err) => {
-        const pError = new FirestorePermissionError({
-          path: userRef.path,
-          operation: 'write',
-          requestResourceData: updateData
-        });
-        errorEmitter.emit('permission-error', pError);
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: userRef.path, operation: 'write',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'write',
+            requestResourceData: updateData
+          }));
+        }
       });
 
       toast({
@@ -154,11 +159,16 @@ export default function UserManagementPage() {
     try {
       const uRef = doc(db, 'users', userEmail);
       await deleteDoc(uRef).catch(async (err) => {
-        const pError = new FirestorePermissionError({
-          path: uRef.path,
-          operation: 'delete'
-        });
-        errorEmitter.emit('permission-error', pError);
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({
+            path: uRef.path, operation: 'delete',
+          }));
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: uRef.path,
+            operation: 'delete'
+          }));
+        }
       });
       toast({
         title: "Acceso Revocado",

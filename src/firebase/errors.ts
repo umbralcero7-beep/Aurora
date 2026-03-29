@@ -107,3 +107,22 @@ export class FirestorePermissionError extends Error {
     this.request = requestObject;
   }
 }
+
+export class FirestoreOfflineError extends Error {
+  public readonly path: string;
+  public readonly operation: string;
+
+  constructor(context: SecurityRuleContext) {
+    super(`FirestoreError: Operation "${context.operation}" on "${context.path}" failed because the device is offline. The operation will be retried when connectivity is restored.`);
+    this.name = 'FirestoreOfflineError';
+    this.path = context.path;
+    this.operation = context.operation;
+  }
+}
+
+export function isOfflineError(err: any): boolean {
+  if (!err) return false;
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return true;
+  const code = err.code || '';
+  return code === 'unavailable' || code === 'failed-precondition' || code === 'deadline-exceeded';
+}
