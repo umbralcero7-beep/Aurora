@@ -24,15 +24,15 @@ export const metadata: Metadata = {
   description: 'Sistema operativo estratégico para gastronomía de élite.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/aurora-icon.png',
+    shortcut: '/aurora-icon.png',
+    apple: '/aurora-icon.png',
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Aurora OS',
-    startupImage: '/icon.svg',
+    startupImage: '/aurora-icon.png',
   },
   other: {
     'mobile-web-app-capable': 'yes',
