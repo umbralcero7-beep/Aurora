@@ -23,10 +23,16 @@ export const metadata: Metadata = {
   title: 'Aurora OS - Gestión de Alto Rendimiento',
   description: 'Sistema operativo estratégico para gastronomía de élite.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Aurora OS',
+    startupImage: '/icon.svg',
   },
   other: {
     'mobile-web-app-capable': 'yes',
