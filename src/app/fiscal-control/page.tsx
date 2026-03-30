@@ -224,64 +224,104 @@ export default function FiscalControlPage() {
     if (typeof window === 'undefined') return;
     const windowPrint = window.open('', '', 'width=600,height=800');
     if (windowPrint) {
+      const itemRows = (report.itemSales || []).map((item: any) => 
+        `<tr><td>${item.quantity}x ${item.name}</td><td align="right">$${(item.total || 0).toLocaleString()}</td></tr>`
+      ).join('')
+
       windowPrint.document.write(`
         <html>
           <head>
             <title>Reporte_Fiscal_${report.type}_#${report.reportNumber}</title>
             <style>
-              body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 12px; line-height: 1.4; color: #000; width: 300px; margin: 0 auto; }
+              body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 11px; line-height: 1.4; color: #000; width: 300px; margin: 0 auto; }
               .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
               .section { margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px; }
               .section-title { font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #000; }
               table { width: 100%; border-collapse: collapse; }
               table td { padding: 2px 0; }
               .grand-total { border: 2px solid #000; padding: 10px; text-align: center; margin-top: 15px; }
-              .signature { margin-top: 40px; border-top: 1 solid #000; text-align: center; padding-top: 5px; font-size: 10px; }
-              .serial-box { background: #000; color: #fff; padding: 5px; margin-bottom: 10px; font-weight: bold; font-size: 14px; text-align: center; }
+              .signature { margin-top: 40px; border-top: 1px solid #000; text-align: center; padding-top: 5px; font-size: 10px; }
+              .serial-box { background: #000; color: #fff; padding: 5px; margin-bottom: 10px; font-weight: bold; font-size: 12px; text-align: center; }
+              .highlight { font-weight: bold; }
             </style>
           </head>
           <body>
             <div class="header">
-              <div style="font-weight: black; font-size: 16px;">AURORA OS</div>
-              <div class="serial-box">REPORTE ${report.type} SERIAL: #${report.reportNumber}</div>
-              <div style="font-size: 9px; text-transform: uppercase;">${effectiveVenueName}</div>
-              <div style="font-size: 11px; font-weight: bold; margin-top: 5px;">FECHA: ${format(new Date(report.timestamp), 'dd/MM/yyyy HH:mm')}</div>
+              <div style="font-weight: black; font-size: 14px;">AURORA OS</div>
+              <div style="font-size: 9px; text-transform: uppercase;">${report.businessName || effectiveVenueName}</div>
+              <div style="font-size: 8px; margin-top: 3px;">NIT: ${(report.businessId || 'N/A').toUpperCase()}</div>
+              <div class="serial-box">REPORTE ${report.type} #${report.reportNumber}</div>
+              <div style="font-size: 10px; font-weight: bold; margin-top: 5px;">
+                ${format(new Date(report.timestamp), 'dd/MM/yyyy HH:mm:ss')}
+              </div>
+              ${report.sessionStart ? `<div style="font-size: 9px;">Desde: ${format(new Date(report.sessionStart), 'dd/MM/yyyy HH:mm')}</div>` : ''}
+            </div>
+
+            <div class="section">
+              <span class="section-title">FACTURAS EMITIDAS</span>
+              <table>
+                <tr><td>DESDE:</td><td align="right">${report.invoiceRange?.from || 'N/A'}</td></tr>
+                <tr><td>HASTA:</td><td align="right">${report.invoiceRange?.to || 'N/A'}</td></tr>
+                <tr class="highlight"><td>TOTAL TRANSACCIONES:</td><td align="right">${report.totalTransactions || 0}</td></tr>
+              </table>
             </div>
 
             <div class="section">
               <span class="section-title">VENTAS POR CANAL</span>
               <table>
-                <tr><td>VENTAS POS:</td><td align="right">${report.posCount}</td></tr>
-                <tr><td>RECAUDO POS:</td><td align="right">$${report.posTotal.toLocaleString()}</td></tr>
-                <tr><td>DOMICILIOS EXITOSOS:</td><td align="right">${report.deliveryCount}</td></tr>
-                <tr><td>RECAUDO DOM:</td><td align="right">$${report.deliveryTotal.toLocaleString()}</td></tr>
+                <tr><td>VENTAS POS (${report.posCount}):</td><td align="right">$${(report.posTotal || 0).toLocaleString()}</td></tr>
+                <tr><td>DOMICILIOS (${report.deliveryCount}):</td><td align="right">$${(report.deliveryTotal || 0).toLocaleString()}</td></tr>
+                ${report.cancelledDeliveryCount > 0 ? `<tr><td>DOM. CANCELADOS (${report.cancelledDeliveryCount}):</td><td align="right">-$${(report.cancelledAmount || 0).toLocaleString()}</td></tr>` : ''}
+              </table>
+            </div>
+
+            <div class="section">
+              <span class="section-title">DESGLOSE FISCAL</span>
+              <table>
+                <tr><td>SUBTOTAL VENTAS:</td><td align="right">$${(report.subtotal || 0).toLocaleString()}</td></tr>
+                <tr><td>IVA (${report.ivaRate || 15}%):</td><td align="right">$${(report.ivaAmount || 0).toLocaleString()}</td></tr>
+                ${report.discounts > 0 ? `<tr><td>DESCUENTOS (-):</td><td align="right">-$${(report.discounts || 0).toLocaleString()}</td></tr>` : ''}
+                ${report.tips > 0 ? `<tr><td>PROPINAS (+):</td><td align="right">$${(report.tips || 0).toLocaleString()}</td></tr>` : ''}
+                <tr><td>VENTAS EXENTAS:</td><td align="right">$0</td></tr>
               </table>
             </div>
 
             <div class="section">
               <span class="section-title">DESGLOSE DE RECAUDO</span>
               <table>
-                <tr><td>EFECTIVO (SIS):</td><td align="right">$${report.breakdown.cash.toLocaleString()}</td></tr>
-                <tr><td>DATÁFONO:</td><td align="right">$${report.breakdown.card.toLocaleString()}</td></tr>
-                <tr><td>NEQUI:</td><td align="right">$${report.breakdown.digital.toLocaleString()}</td></tr>
+                <tr><td>EFECTIVO:</td><td align="right">$${(report.breakdown?.cash || 0).toLocaleString()}</td></tr>
+                <tr><td>DATÁFONO:</td><td align="right">$${(report.breakdown?.card || 0).toLocaleString()}</td></tr>
+                <tr><td>NEQUI:</td><td align="right">$${(report.breakdown?.digital || 0).toLocaleString()}</td></tr>
                 ${report.type === 'Z' ? `
                   <tr style="border-top: 1px dotted #000;"><td>GASTOS (-):</td><td align="right">$${(report.expensesTotal || 0).toLocaleString()}</td></tr>
                   <tr><td>BASE (-):</td><td align="right">$${(report.cashBase || 0).toLocaleString()}</td></tr>
-                  <tr style="font-weight:bold;"><td>EFECTIVO ESPERADO:</td><td align="right">$${(report.breakdown.cash - (report.expensesTotal || 0) - (report.cashBase || 0)).toLocaleString()}</td></tr>
-                  <tr style="font-weight:bold;"><td>EFECTIVO FÍSICO:</td><td align="right">$${(report.actualCashCount || 0).toLocaleString()}</td></tr>
-                  <tr style="font-weight:bold; color: ${report.discrepancy < 0 ? 'red' : 'black'};"><td>DIFERENCIA:</td><td align="right">$${(report.discrepancy || 0).toLocaleString()}</td></tr>
+                  <tr class="highlight"><td>EFECTIVO ESPERADO:</td><td align="right">$${((report.breakdown?.cash || 0) - (report.expensesTotal || 0) - (report.cashBase || 0)).toLocaleString()}</td></tr>
+                  <tr class="highlight"><td>EFECTIVO FÍSICO:</td><td align="right">$${(report.actualCashCount || 0).toLocaleString()}</td></tr>
+                  <tr class="highlight" style="color: ${(report.discrepancy || 0) < 0 ? 'red' : 'black'};"><td>DIFERENCIA:</td><td align="right">$${(report.discrepancy || 0).toLocaleString()}</td></tr>
                 ` : ''}
               </table>
             </div>
 
+            ${itemRows ? `<div class="section">
+              <span class="section-title">DETALLE DE PRODUCTOS</span>
+              <table>${itemRows}</table>
+            </div>` : ''}
+
             <div class="grand-total">
-              <div style="font-size: 10px; font-weight: bold;">TOTAL BRUTO SESIÓN</div>
-              <div style="font-size: 22px; font-weight: black;">$${report.totalGross.toLocaleString()}</div>
+              <div style="font-size: 9px; font-weight: bold;">TOTAL BRUTO ${report.type === 'Z' ? 'JORNADA' : 'PARCIAL'}</div>
+              <div style="font-size: 20px; font-weight: black;">$${(report.totalGross || 0).toLocaleString()}</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px; font-size: 8px;">
+              SERIAL EQUIPO: ${report.equipmentSerial || 'N/A'}
             </div>
 
             <div class="signature">FIRMA RESPONSABLE TURNO<br><span style="font-size:8px; opacity:0.5;">${report.generatedBy}</span></div>
             <div class="signature">FIRMA ADMINISTRACIÓN / AUDITOR</div>
-            <div style="text-align: center; margin-top: 20px; font-size: 8px; opacity: 0.5;">AURORA OS V4.5 • Umbral Cero</div>
+            <div style="text-align: center; margin-top: 20px; font-size: 7px; opacity: 0.5;">
+              AURORA OS • Umbral Cero<br>
+              Sistema de Facturación Electrónica
+            </div>
           </body>
         </html>
       `);
@@ -298,11 +338,31 @@ export default function FiscalControlPage() {
     const lastReportNumber = (reports || []).reduce((max, r) => Math.max(max, Number(r.reportNumber) || 0), 0);
     const nextReportNumber = lastReportNumber + 1;
 
+    const invoiceNumbers = sessionInvoices.map(inv => inv.invoiceNumber || '').filter(Boolean).sort()
+    const firstInvoice = invoiceNumbers[0] || 'N/A'
+    const lastInvoice = invoiceNumbers[invoiceNumbers.length - 1] || 'N/A'
+
+    const subtotalNoTax = stats.totalCombined / 1.15
+    const ivaAmount = stats.totalCombined - subtotalNoTax
+    const discounts = sessionInvoices.reduce((a, inv) => a + (Number(inv.discount) || 0), 0)
+    const tips = sessionInvoices.reduce((a, inv) => a + (Number(inv.tip) || 0), 0)
+    const cancelledAmount = sessionInvoices.filter(inv => inv.status === 'Cancelled').reduce((a, inv) => a + (Number(inv.total) || 0), 0)
+    const cancelledCount = sessionInvoices.filter(inv => inv.status === 'Cancelled').length
+
     const reportData = {
       type,
       reportNumber: nextReportNumber,
       timestamp: new Date().toISOString(),
+      sessionStart: sessionStartIso,
       totalGross: stats.totalCombined,
+      subtotal: Math.round(subtotalNoTax),
+      ivaRate: 15,
+      ivaAmount: Math.round(ivaAmount),
+      totalNet: Math.round(subtotalNoTax),
+      discounts: discounts,
+      tips: tips,
+      cancelledAmount: cancelledAmount,
+      cancelledCount: cancelledCount,
       posCount: stats.posCount,
       posTotal: stats.posTotal,
       deliveryCount: stats.deliveryCount,
@@ -311,9 +371,13 @@ export default function FiscalControlPage() {
       expensesTotal: stats.expensesTotal,
       itemSales: stats.itemSales,
       breakdown: { cash: stats.cash, card: stats.card, digital: stats.digital },
+      invoiceRange: { from: firstInvoice, to: lastInvoice },
+      totalTransactions: stats.posCount + stats.deliveryCount,
       generatedBy: user.email || 'System',
       businessId: effectiveBusinessId,
-      assignedVenue: effectiveVenueName
+      assignedVenue: effectiveVenueName,
+      equipmentSerial: 'AURORA-POS-' + (effectiveBusinessId || '001').toUpperCase(),
+      businessName: effectiveVenueName,
     }
 
     setReportPreview(reportData)

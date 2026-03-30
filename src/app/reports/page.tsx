@@ -24,7 +24,8 @@ import {
   Truck,
   ShoppingBag,
   History,
-  CheckCircle2
+  CheckCircle2,
+  Utensils
 } from "lucide-react"
 import { 
   Card, 
@@ -46,6 +47,15 @@ import {
   DialogDescription, 
   DialogFooter
 } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { useFirestore, useMemoFirebase, useUser, useDoc, useCollection } from "@/firebase"
 import { collection, query, where, orderBy, doc, limit } from "firebase/firestore"
 import { analyzeInventory } from "@/ai/flows/inventory-analyst-flow"
@@ -323,49 +333,199 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8">
-          <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl p-10 bg-white">
-            <CardHeader className="p-0 pb-10 flex flex-row justify-between items-center">
-              <div>
-                <CardTitle className="text-xl font-black text-slate-900 uppercase">Auditoría de Insumos (Post-Cierre)</CardTitle>
-                <CardDescription className="text-[10px] font-black text-slate-400 uppercase mt-1">Checklist auto-generada con los platos y bebidas vendidos.</CardDescription>
-              </div>
-              <ClipboardCheck className="h-8 w-8 text-primary" />
-            </CardHeader>
-            <CardContent className="p-0 space-y-8">
-              <div className="p-8 border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-6">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                      <FileSpreadsheet className="h-5 w-5 text-emerald-500" />
+          <Tabs defaultValue="audit" className="space-y-6">
+            <TabsList className="bg-slate-100 rounded-xl p-1 h-12">
+              <TabsTrigger value="audit" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
+                <ClipboardCheck className="mr-2 h-3 w-3" /> Auditoría Inventario
+              </TabsTrigger>
+              <TabsTrigger value="deliveries" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
+                <Truck className="mr-2 h-3 w-3" /> Detalle Domicilios
+              </TabsTrigger>
+              <TabsTrigger value="dishes" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
+                <Utensils className="mr-2 h-3 w-3" /> Detalle Platos
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="audit">
+              <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl p-10 bg-white">
+                <CardHeader className="p-0 pb-10 flex flex-row justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl font-black text-slate-900 uppercase">Auditoría de Insumos (Post-Cierre)</CardTitle>
+                    <CardDescription className="text-[10px] font-black text-slate-400 uppercase mt-1">Checklist auto-generada con los platos y bebidas vendidos.</CardDescription>
+                  </div>
+                  <ClipboardCheck className="h-8 w-8 text-primary" />
+                </CardHeader>
+                <CardContent className="p-0 space-y-8">
+                  <div className="p-8 border-2 border-dashed rounded-3xl bg-slate-50/50 space-y-6">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                          <FileSpreadsheet className="h-5 w-5 text-emerald-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900 uppercase">Balance de Ventas por Producto</p>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase">Ciclo Actual de Auditoría</p>
+                        </div>
+                      </div>
+                      <Button className="bg-primary hover:bg-primary/90 h-10 rounded-xl font-black text-[9px] uppercase tracking-widest px-6" onClick={printInventoryChecklist}>
+                        Verificar Stock Físico
+                      </Button>
                     </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 uppercase">Balance de Ventas por Producto</p>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase">Ciclo Actual de Auditoría</p>
+                    <div className="grid grid-cols-1 gap-4">
+                      <ScrollArea className="h-[200px] bg-white rounded-2xl border border-slate-100 p-6">
+                        <div className="space-y-4">
+                          {stats.itemSales.length === 0 ? (
+                            <div className="text-center py-10 opacity-20 italic text-xs uppercase font-black">Sin ventas en la sesión actual.</div>
+                          ) : (
+                            stats.itemSales.map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-center border-b border-slate-50 pb-2">
+                                <span className="text-[10px] font-black uppercase text-slate-600">{item.name}</span>
+                                <Badge className="bg-slate-900 text-white font-black text-[10px] rounded-lg px-2">Vendido: {item.quantity}</Badge>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </ScrollArea>
                     </div>
                   </div>
-                  <Button className="bg-primary hover:bg-primary/90 h-10 rounded-xl font-black text-[9px] uppercase tracking-widest px-6" onClick={printInventoryChecklist}>
-                    Verificar Stock Físico
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <ScrollArea className="h-[200px] bg-white rounded-2xl border border-slate-100 p-6">
-                    <div className="space-y-4">
-                      {stats.itemSales.length === 0 ? (
-                        <div className="text-center py-10 opacity-20 italic text-xs uppercase font-black">Sin ventas en la sesión actual.</div>
-                      ) : (
-                        stats.itemSales.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center border-b border-slate-50 pb-2">
-                            <span className="text-[10px] font-black uppercase text-slate-600">{item.name}</span>
-                            <Badge className="bg-slate-900 text-white font-black text-[10px] rounded-lg px-2">Vendido: {item.quantity}</Badge>
-                          </div>
-                        ))
-                      )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="deliveries">
+              <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl bg-white">
+                <CardHeader className="px-10 pt-10 pb-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-xl font-black text-slate-900 uppercase flex items-center gap-3">
+                        <Truck className="h-6 w-6 text-secondary" /> Detalle de Domicilios
+                      </CardTitle>
+                      <CardDescription className="text-[10px] font-black text-slate-400 uppercase mt-1">
+                        {currentSessionDeliveries.length} domicilios en sesión actual
+                      </CardDescription>
                     </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-black text-slate-400 uppercase">Total Domicilios</p>
+                      <p className="text-2xl font-black text-secondary">{formatCurrencyDetailed(stats.deliveryTotal)}</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-10 pb-10">
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-center">
+                      <p className="text-[8px] font-black uppercase text-emerald-600">Entregados</p>
+                      <p className="text-2xl font-black text-emerald-700">{currentSessionDeliveries.filter(d => d.status === 'Delivered').length}</p>
+                    </div>
+                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-center">
+                      <p className="text-[8px] font-black uppercase text-amber-600">En Camino</p>
+                      <p className="text-2xl font-black text-amber-700">{currentSessionDeliveries.filter(d => d.status === 'OnWay' || d.status === 'Dispatched').length}</p>
+                    </div>
+                    <div className="p-4 bg-red-50 rounded-2xl border border-red-100 text-center">
+                      <p className="text-[8px] font-black uppercase text-red-600">Cancelados</p>
+                      <p className="text-2xl font-black text-red-700">{currentSessionDeliveries.filter(d => d.status === 'Cancelled').length}</p>
+                    </div>
+                  </div>
+                  <ScrollArea className="h-[300px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="font-black text-[9px] uppercase">#</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Cliente</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Estado</TableHead>
+                          <TableHead className="font-black text-[9px] uppercase">Hora</TableHead>
+                          <TableHead className="text-right font-black text-[9px] uppercase">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentSessionDeliveries.length === 0 ? (
+                          <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-300 font-black text-xs">Sin domicilios en sesión</TableCell></TableRow>
+                        ) : (
+                          currentSessionDeliveries.map((d, idx) => (
+                            <TableRow key={d.id || idx}>
+                              <TableCell className="font-black text-[10px]">{d.orderNumber || idx + 1}</TableCell>
+                              <TableCell>
+                                <div>
+                                  <p className="font-black text-[10px] uppercase">{d.customerName || 'N/A'}</p>
+                                  <p className="text-[8px] text-slate-400">{d.address || ''}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={cn("text-[8px] font-bold", 
+                                  d.status === 'Delivered' ? "bg-emerald-100 text-emerald-700" : 
+                                  d.status === 'Cancelled' ? "bg-red-100 text-red-700" : 
+                                  "bg-amber-100 text-amber-700"
+                                )}>{d.status || 'Pendiente'}</Badge>
+                              </TableCell>
+                              <TableCell className="text-[10px] font-bold text-slate-500">{d.createdAt ? format(new Date(d.createdAt), 'HH:mm') : '-'}</TableCell>
+                              <TableCell className="text-right font-black text-[10px]">{formatCurrencyDetailed(d.total || 0)}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
                   </ScrollArea>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="dishes">
+              <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl bg-white">
+                <CardHeader className="px-10 pt-10 pb-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-xl font-black text-slate-900 uppercase flex items-center gap-3">
+                        <Utensils className="h-6 w-6 text-primary" /> Detalle de Platos y Bebidas
+                      </CardTitle>
+                      <CardDescription className="text-[10px] font-black text-slate-400 uppercase mt-1">
+                        {stats.itemSales.length} productos vendidos en sesión
+                      </CardDescription>
+                    </div>
+                    <Button variant="outline" className="rounded-xl h-10 font-black text-[9px] uppercase" onClick={() => {
+                      const data = stats.itemSales.map((item: any) => ({ Producto: item.name, Cantidad: item.quantity }))
+                      const ws = XLSX.utils.json_to_sheet(data)
+                      const wb = XLSX.utils.book_new()
+                      XLSX.utils.book_append_sheet(wb, ws, 'Productos')
+                      XLSX.writeFile(wb, `detalle_platos_${format(new Date(), 'yyyy-MM-dd')}.xlsx`)
+                    }}>
+                      <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> Exportar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-10 pb-10">
+                  <ScrollArea className="h-[350px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="font-black text-[9px] uppercase">Producto</TableHead>
+                          <TableHead className="text-right font-black text-[9px] uppercase">Cantidad</TableHead>
+                          <TableHead className="text-right font-black text-[9px] uppercase">Precio Unit.</TableHead>
+                          <TableHead className="text-right font-black text-[9px] uppercase">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {stats.itemSales.length === 0 ? (
+                          <TableRow><TableCell colSpan={4} className="text-center py-10 text-slate-300 font-black text-xs">Sin productos en sesión</TableCell></TableRow>
+                        ) : (
+                          stats.itemSales.map((item: any, idx: number) => (
+                            <TableRow key={idx}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-black text-[10px] uppercase">{item.name}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-black text-[10px]">{item.quantity}</TableCell>
+                              <TableCell className="text-right text-[10px] font-bold text-slate-500">{formatCurrencyDetailed((item.total || 0) / (item.quantity || 1))}</TableCell>
+                              <TableCell className="text-right font-black text-[10px] text-primary">{formatCurrencyDetailed(item.total || 0)}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
 
         <div className="lg:col-span-4">

@@ -159,6 +159,7 @@ export function AppSidebar() {
         { title: t.nav.invoices, url: "/invoices", icon: FileText, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
         { title: t.nav.fiscalControl, url: "/fiscal-control", icon: ShieldCheck, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
         { title: t.nav.costs, url: "/costs", icon: Scale, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
+        { title: t.nav.waiters, url: "/waiters", icon: Users, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
       ],
     },
     {

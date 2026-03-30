@@ -26,6 +26,9 @@ export const translations = {
       help: "Help Center",
       costs: "Costs ERP",
       venues: "Venues",
+      waiters: "Waiter Log",
+      deliveryReport: "Delivery Report",
+      dishReport: "Dish Report",
     },
     navGroups: {
       operations: "Operations",
@@ -158,6 +161,9 @@ export const translations = {
       help: "Centro de Ayuda",
       costs: "Costos ERP",
       venues: "Sedes",
+      waiters: "Bitácora Meseros",
+      deliveryReport: "Reporte Domicilios",
+      dishReport: "Reporte Platos",
     },
     navGroups: {
       operations: "Operaciones",
