@@ -25,7 +25,8 @@ import {
   ShoppingBag,
   History,
   CheckCircle2,
-  Utensils
+  Utensils,
+  ReceiptText
 } from "lucide-react"
 import { 
   Card, 
@@ -171,6 +172,14 @@ export default function ReportsPage() {
 
     const posTotal = currentSessionInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0)
     const deliveryTotal = currentSessionDeliveries.reduce((acc, d) => acc + (Number(d.total) || 0), 0)
+
+    // Ventas rápidas: facturas con tableNumber "PARA LLEVAR"
+    const quickSales = currentSessionInvoices.filter(inv => inv.tableNumber === 'PARA LLEVAR')
+    const quickTotal = quickSales.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0)
+
+    // Ventas de mesa: facturas con mesa asignada
+    const tableSales = currentSessionInvoices.filter(inv => inv.tableNumber && inv.tableNumber !== 'PARA LLEVAR')
+    const tableTotal = tableSales.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0)
     
     return {
       posTotal,
@@ -178,7 +187,13 @@ export default function ReportsPage() {
       deliveryTotal,
       deliveryCount: currentSessionDeliveries.length,
       grandTotal: posTotal + deliveryTotal,
-      itemSales: Object.values(itemMap).sort((a, b) => b.quantity - a.quantity)
+      itemSales: Object.values(itemMap).sort((a, b) => b.quantity - a.quantity),
+      quickSales,
+      quickTotal,
+      quickCount: quickSales.length,
+      tableSales,
+      tableTotal,
+      tableCount: tableSales.length,
     }
   }, [currentSessionInvoices, currentSessionDeliveries])
 
@@ -343,6 +358,9 @@ export default function ReportsPage() {
               </TabsTrigger>
               <TabsTrigger value="dishes" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
                 <Utensils className="mr-2 h-3 w-3" /> Detalle Platos
+              </TabsTrigger>
+              <TabsTrigger value="detailed" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
+                <ReceiptText className="mr-2 h-3 w-3" /> Venta Detallada
               </TabsTrigger>
             </TabsList>
 
@@ -522,6 +540,173 @@ export default function ReportsPage() {
                       </TableBody>
                     </Table>
                   </ScrollArea>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="detailed">
+              <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl bg-white">
+                <CardHeader className="px-10 pt-10 pb-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-xl font-black text-slate-900 uppercase flex items-center gap-3">
+                        <ReceiptText className="h-6 w-6 text-primary" /> Venta Detallada por Canal
+                      </CardTitle>
+                      <CardDescription className="text-[10px] font-black text-slate-400 uppercase mt-1">
+                        Desglose: Domicilios, Ventas Rápidas y Mesas
+                      </CardDescription>
+                    </div>
+                    <Button variant="outline" className="rounded-xl h-10 font-black text-[9px] uppercase" onClick={() => {
+                      const data = [
+                        { Canal: 'Domicilios', Cantidad: stats.deliveryCount, Total: stats.deliveryTotal },
+                        { Canal: 'Venta Rápida', Cantidad: stats.quickCount, Total: stats.quickTotal },
+                        { Canal: 'Mesas', Cantidad: stats.tableCount, Total: stats.tableTotal },
+                      ]
+                      const ws = XLSX.utils.json_to_sheet(data)
+                      const wb = XLSX.utils.book_new()
+                      XLSX.utils.book_append_sheet(wb, ws, 'Venta Detallada')
+                      XLSX.writeFile(wb, `venta_detallada_${format(new Date(), 'yyyy-MM-dd')}.xlsx`)
+                    }}>
+                      <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> Exportar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-10 pb-10 space-y-8">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-5 bg-secondary/5 rounded-2xl border border-secondary/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Truck className="h-4 w-4 text-secondary" />
+                        <span className="text-[9px] font-black uppercase text-slate-500">Domicilios</span>
+                      </div>
+                      <p className="text-2xl font-black text-secondary">{formatCurrencyDetailed(stats.deliveryTotal)}</p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-1">{stats.deliveryCount} pedidos</p>
+                    </div>
+                    <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ShoppingBag className="h-4 w-4 text-amber-600" />
+                        <span className="text-[9px] font-black uppercase text-slate-500">Venta Rápida</span>
+                      </div>
+                      <p className="text-2xl font-black text-amber-700">{formatCurrencyDetailed(stats.quickTotal)}</p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-1">{stats.quickCount} transacciones</p>
+                    </div>
+                    <div className="p-5 bg-primary/5 rounded-2xl border border-primary/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Utensils className="h-4 w-4 text-primary" />
+                        <span className="text-[9px] font-black uppercase text-slate-500">Mesas</span>
+                      </div>
+                      <p className="text-2xl font-black text-primary">{formatCurrencyDetailed(stats.tableTotal)}</p>
+                      <p className="text-[9px] font-bold text-slate-400 mt-1">{stats.tableCount} cuentas</p>
+                    </div>
+                  </div>
+
+                  <Tabs defaultValue="det-deliveries" className="space-y-4">
+                    <TabsList className="bg-slate-50 rounded-lg p-1 h-10">
+                      <TabsTrigger value="det-deliveries" className="rounded-md font-black text-[7px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">
+                        Domicilios ({stats.deliveryCount})
+                      </TabsTrigger>
+                      <TabsTrigger value="det-quick" className="rounded-md font-black text-[7px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">
+                        Venta Rápida ({stats.quickCount})
+                      </TabsTrigger>
+                      <TabsTrigger value="det-tables" className="rounded-md font-black text-[7px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">
+                        Mesas ({stats.tableCount})
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="det-deliveries">
+                      <ScrollArea className="h-[250px]">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="font-black text-[9px] uppercase">#</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Cliente</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Items</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Hora</TableHead>
+                              <TableHead className="text-right font-black text-[9px] uppercase">Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {currentSessionDeliveries.length === 0 ? (
+                              <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-300 font-black text-xs">Sin domicilios</TableCell></TableRow>
+                            ) : (
+                              currentSessionDeliveries.map((d, idx) => (
+                                <TableRow key={d.id || idx}>
+                                  <TableCell className="font-black text-[10px]">{d.orderNumber || idx + 1}</TableCell>
+                                  <TableCell className="font-black text-[10px] uppercase">{d.customerName || 'N/A'}</TableCell>
+                                  <TableCell className="text-[10px] text-slate-500">{(d.items || []).reduce((a: number, i: any) => a + Number(i.quantity || 0), 0)} items</TableCell>
+                                  <TableCell className="text-[10px] font-bold text-slate-500">{d.createdAt ? format(new Date(d.createdAt), 'HH:mm') : '-'}</TableCell>
+                                  <TableCell className="text-right font-black text-[10px] text-secondary">{formatCurrencyDetailed(d.total || 0)}</TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </TabsContent>
+
+                    <TabsContent value="det-quick">
+                      <ScrollArea className="h-[250px]">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="font-black text-[9px] uppercase">Factura</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Cajero</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Items</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Hora</TableHead>
+                              <TableHead className="text-right font-black text-[9px] uppercase">Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {stats.quickSales.length === 0 ? (
+                              <TableRow><TableCell colSpan={5} className="text-center py-10 text-slate-300 font-black text-xs">Sin ventas rápidas</TableCell></TableRow>
+                            ) : (
+                              stats.quickSales.map((inv, idx) => (
+                                <TableRow key={inv.id || idx}>
+                                  <TableCell className="font-black text-[10px]">{inv.invoiceNumber || 'N/A'}</TableCell>
+                                  <TableCell className="font-black text-[10px] uppercase">{inv.cashierName || 'N/A'}</TableCell>
+                                  <TableCell className="text-[10px] text-slate-500">{(inv.items || []).reduce((a: number, i: any) => a + Number(i.quantity || 0), 0)} items</TableCell>
+                                  <TableCell className="text-[10px] font-bold text-slate-500">{inv.timestamp ? format(new Date(inv.timestamp), 'HH:mm') : '-'}</TableCell>
+                                  <TableCell className="text-right font-black text-[10px] text-amber-600">{formatCurrencyDetailed(inv.total || 0)}</TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </TabsContent>
+
+                    <TabsContent value="det-tables">
+                      <ScrollArea className="h-[250px]">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="font-black text-[9px] uppercase">Factura</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Mesa</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Cajero</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Items</TableHead>
+                              <TableHead className="font-black text-[9px] uppercase">Hora</TableHead>
+                              <TableHead className="text-right font-black text-[9px] uppercase">Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {stats.tableSales.length === 0 ? (
+                              <TableRow><TableCell colSpan={6} className="text-center py-10 text-slate-300 font-black text-xs">Sin ventas de mesa</TableCell></TableRow>
+                            ) : (
+                              stats.tableSales.map((inv, idx) => (
+                                <TableRow key={inv.id || idx}>
+                                  <TableCell className="font-black text-[10px]">{inv.invoiceNumber || 'N/A'}</TableCell>
+                                  <TableCell><Badge className="bg-slate-900 text-white font-black text-[9px] rounded-lg">Mesa {inv.tableNumber || '?'}</Badge></TableCell>
+                                  <TableCell className="font-black text-[10px] uppercase">{inv.cashierName || 'N/A'}</TableCell>
+                                  <TableCell className="text-[10px] text-slate-500">{(inv.items || []).reduce((a: number, i: any) => a + Number(i.quantity || 0), 0)} items</TableCell>
+                                  <TableCell className="text-[10px] font-bold text-slate-500">{inv.timestamp ? format(new Date(inv.timestamp), 'HH:mm') : '-'}</TableCell>
+                                  <TableCell className="text-right font-black text-[10px] text-primary">{formatCurrencyDetailed(inv.total || 0)}</TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </TabsContent>
