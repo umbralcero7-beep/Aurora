@@ -32,7 +32,14 @@ import {
   User,
   MapPin,
   IdCard,
-  ShieldCheck
+  ShieldCheck,
+  Lock,
+  ArrowRight,
+  Wallet,
+  TrendingUp,
+  AlertTriangle,
+  Download,
+  PenLine
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -46,6 +53,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, query, where, doc, updateDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
@@ -56,6 +64,9 @@ import { processElectronicInvoice } from "@/ai/flows/electronic-invoice-flow"
 import { useRouter } from "next/navigation"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import * as XLSX from 'xlsx'
 
 // Carta Aurora Precargada para Respaldo Demo
 const DEFAULT_MENU = [
@@ -103,6 +114,13 @@ export default function POSPage() {
     address: ""
   })
 
+  // Cierre de Caja State
+  const [showCierreCaja, setShowCierreCaja] = useState(false)
+  const [cierreStep, setCierreStep] = useState(1)
+  const [efectivoContado, setEfectivoContado] = useState("")
+  const [baseCaja, setBaseCaja] = useState("")
+  const [isCierreLoading, setIsCierreLoading] = useState(false)
+
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -144,6 +162,60 @@ export default function POSPage() {
 
   const { data: allOrders } = useCollection(openOrdersQuery)
   const { data: dbMenu, isLoading: menuLoading } = useCollection(menuQuery)
+
+  const invoicesQuery = useMemoFirebase(() => {
+    if (!db || !effectiveBusinessId) return null
+    return query(collection(db, "invoices"), where("businessId", "==", effectiveBusinessId))
+  }, [db, effectiveBusinessId])
+
+  const expensesQuery = useMemoFirebase(() => {
+    if (!db || !effectiveBusinessId) return null
+    return query(collection(db, "expenses"), where("businessId", "==", effectiveBusinessId))
+  }, [db, effectiveBusinessId])
+
+  const fiscalReportsQuery = useMemoFirebase(() => {
+    if (!db || !effectiveBusinessId) return null
+    return query(collection(db, "fiscal_reports"), where("businessId", "==", effectiveBusinessId))
+  }, [db, effectiveBusinessId])
+
+  const { data: allInvoices } = useCollection(invoicesQuery)
+  const { data: allExpenses } = useCollection(expensesQuery)
+  const { data: allFiscalReports } = useCollection(fiscalReportsQuery)
+
+  const sessionStartIso = useMemo(() => {
+    const lastZ = (allFiscalReports || []).find(r => r.type === 'Z')
+    if (lastZ?.timestamp) return lastZ.timestamp
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d.toISOString()
+  }, [allFiscalReports])
+
+  const sessionInvoices = useMemo(() => {
+    if (!allInvoices || !sessionStartIso) return []
+    return allInvoices.filter(inv => (inv.timestamp || "") > sessionStartIso)
+  }, [allInvoices, sessionStartIso])
+
+  const sessionExpenses = useMemo(() => {
+    if (!allExpenses || !sessionStartIso) return []
+    return allExpenses.filter(e => (e.createdAt || "") > sessionStartIso)
+  }, [allExpenses, sessionStartIso])
+
+  const cierreStats = useMemo(() => {
+    const cash = sessionInvoices.filter(inv => inv.paymentMethod === 'Efectivo').reduce((a, inv) => a + (Number(inv.total) || 0), 0)
+    const card = sessionInvoices.filter(inv => inv.paymentMethod === 'Datafono').reduce((a, inv) => a + (Number(inv.total) || 0), 0)
+    const transfer = sessionInvoices.filter(inv => inv.paymentMethod === 'Nequi').reduce((a, inv) => a + (Number(inv.total) || 0), 0)
+    const expensesTotal = sessionExpenses.reduce((a, e) => a + (Number(e.amount) || 0), 0)
+    return {
+      cash, card, transfer,
+      totalSales: cash + card + transfer,
+      salesCount: sessionInvoices.length,
+      expensesTotal,
+      expectedCash: cash - expensesTotal - (Number(baseCaja) || 0),
+      physicalCash: Number(efectivoContado) || 0,
+    }
+  }, [sessionInvoices, sessionExpenses, baseCaja, efectivoContado])
+
+  const cierreDiscrepancy = cierreStats.physicalCash - cierreStats.expectedCash
 
   const activeOrders = useMemo(() => {
     if (!allOrders) return []
@@ -298,6 +370,148 @@ export default function POSPage() {
     ? directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15 
     : (selectedOrder?.total || 0)
 
+  const openCierreCaja = () => {
+    setCierreStep(1)
+    setEfectivoContado("")
+    setBaseCaja("")
+    setShowCierreCaja(true)
+  }
+
+  const finalizeCierreCaja = async () => {
+    if (!db || !effectiveBusinessId) return
+    setIsCierreLoading(true)
+
+    const reportNumber = (allFiscalReports || []).reduce((max, r) => Math.max(max, Number(r.reportNumber) || 0), 0) + 1
+
+    const reportData = {
+      type: 'Z',
+      reportNumber,
+      timestamp: new Date().toISOString(),
+      totalGross: cierreStats.totalSales,
+      posCount: cierreStats.salesCount,
+      posTotal: cierreStats.totalSales,
+      deliveryCount: 0,
+      deliveryTotal: 0,
+      expensesTotal: cierreStats.expensesTotal,
+      breakdown: { cash: cierreStats.cash, card: cierreStats.card, digital: cierreStats.transfer },
+      cashBase: Number(baseCaja) || 0,
+      actualCashCount: cierreStats.physicalCash,
+      discrepancy: cierreDiscrepancy,
+      generatedBy: (profile?.displayName || user?.email || 'Cajero').toUpperCase(),
+      businessId: effectiveBusinessId,
+      assignedVenue: effectiveVenueName,
+      id: doc(collection(db, "fiscal_reports")).id,
+      equipmentSerial: 'AURORA-POS-' + (effectiveBusinessId || '001').toUpperCase(),
+    }
+
+    try {
+      await setDoc(doc(db, "fiscal_reports", reportData.id), reportData)
+      printCierreReport(reportData)
+      setShowCierreCaja(false)
+      toast({ title: "Cierre de Caja Completado", description: "Turno cerrado exitosamente." })
+    } catch (err: any) {
+      if (isOfflineError(err)) {
+        errorEmitter.emit('offline-error', new FirestoreOfflineError({ path: `fiscal_reports/${reportData.id}`, operation: 'create' }))
+      } else {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `fiscal_reports/${reportData.id}`, operation: 'create', requestResourceData: reportData }))
+      }
+    } finally {
+      setIsCierreLoading(false)
+    }
+  }
+
+  const printCierreReport = (report: any) => {
+    if (typeof window === 'undefined') return
+    const w = window.open('', '', 'width=600,height=800')
+    if (!w) return
+
+    const expensesRows = sessionExpenses.map((e: any) => 
+      `<tr><td>${(e.description || '').toUpperCase()}</td><td align="right">$${Number(e.amount || 0).toLocaleString()}</td></tr>`
+    ).join('')
+
+    w.document.write(`
+      <html><head><title>Cierre_Caja_${report.reportNumber}</title>
+      <style>
+        body { font-family: 'Courier New', monospace; padding: 20px; font-size: 11px; color: #000; width: 300px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+        .section { margin-bottom: 15px; border-bottom: 1px dashed #ccc; padding-bottom: 10px; }
+        .section-title { font-weight: bold; display: block; margin-bottom: 5px; text-transform: uppercase; border-bottom: 1px solid #000; }
+        table { width: 100%; border-collapse: collapse; }
+        table td { padding: 2px 0; }
+        .grand-total { border: 2px solid #000; padding: 10px; text-align: center; margin-top: 15px; }
+        .signature { margin-top: 50px; border-top: 1px solid #000; text-align: center; padding-top: 5px; font-size: 10px; }
+        .highlight { font-weight: bold; }
+      </style></head><body>
+        <div class="header">
+          <div style="font-weight: bold; font-size: 14px;">AURORA OS</div>
+          <div style="font-size: 9px;">REPORTE DE CIERRE DE CAJA</div>
+          <div style="font-size: 11px; font-weight: bold; margin-top: 5px;">${effectiveVenueName}</div>
+          <div style="font-size: 10px; margin-top: 5px;">Fecha: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: es })}</div>
+          <div style="font-size: 10px;">Reporte #${report.reportNumber}</div>
+        </div>
+        <div class="section">
+          <span class="section-title">VENTAS POR MÉTODO DE PAGO</span>
+          <table>
+            <tr><td>VENTAS REGISTRADAS:</td><td align="right">${cierreStats.salesCount}</td></tr>
+            <tr><td>EFECTIVO:</td><td align="right">$${cierreStats.cash.toLocaleString()}</td></tr>
+            <tr><td>DATÁFONO:</td><td align="right">$${cierreStats.card.toLocaleString()}</td></tr>
+            <tr><td>TRANSFERENCIA/NEQUI:</td><td align="right">$${cierreStats.transfer.toLocaleString()}</td></tr>
+            <tr class="highlight"><td>TOTAL VENTAS:</td><td align="right">$${cierreStats.totalSales.toLocaleString()}</td></tr>
+          </table>
+        </div>
+        ${expensesRows ? `<div class="section">
+          <span class="section-title">GASTOS DEL TURNO</span>
+          <table>${expensesRows}
+            <tr class="highlight"><td>TOTAL GASTOS:</td><td align="right">$${cierreStats.expensesTotal.toLocaleString()}</td></tr>
+          </table>
+        </div>` : ''}
+        <div class="section">
+          <span class="section-title">ARQUEO DE CAJA</span>
+          <table>
+            <tr><td>BASE DE CAJA:</td><td align="right">$${(Number(baseCaja) || 0).toLocaleString()}</td></tr>
+            <tr><td>EFECTIVO SISTEMA:</td><td align="right">$${cierreStats.cash.toLocaleString()}</td></tr>
+            <tr><td>GASTOS (-):</td><td align="right">-$${cierreStats.expensesTotal.toLocaleString()}</td></tr>
+            <tr><td>BASE (-):</td><td align="right">-$${(Number(baseCaja) || 0).toLocaleString()}</td></tr>
+            <tr class="highlight"><td>EFECTIVO ESPERADO:</td><td align="right">$${cierreStats.expectedCash.toLocaleString()}</td></tr>
+            <tr class="highlight"><td>EFECTIVO CONTADO:</td><td align="right">$${cierreStats.physicalCash.toLocaleString()}</td></tr>
+            <tr class="highlight" style="color: ${cierreDiscrepancy < 0 ? 'red' : cierreDiscrepancy > 0 ? 'green' : 'black'};">
+              <td>DIFERENCIA:</td><td align="right">$${cierreDiscrepancy.toLocaleString()}</td>
+            </tr>
+          </table>
+        </div>
+        <div class="grand-total">
+          <div style="font-size: 9px;">VENTAS BRUTAS DEL TURNO</div>
+          <div style="font-size: 20px; font-weight: bold;">$${cierreStats.totalSales.toLocaleString()}</div>
+        </div>
+        <div class="signature">FIRMA DEL CAJERO<br><span style="font-size: 8px;">${(profile?.displayName || user?.email || '').toUpperCase()}</span></div>
+        <div class="signature">FIRMA DEL ADMINISTRADOR<br><span style="font-size: 8px;">RECIBIDO Y CONFORME</span></div>
+        <div style="text-align: center; margin-top: 30px; font-size: 7px; opacity: 0.5;">Aurora OS • Umbral Cero</div>
+      </body></html>
+    `)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print(); w.close() }, 500)
+  }
+
+  const exportCierreExcel = () => {
+    const data = [
+      { Concepto: 'Ventas Efectivo', Valor: cierreStats.cash },
+      { Concepto: 'Ventas Datáfono', Valor: cierreStats.card },
+      { Concepto: 'Ventas Transferencia/Nequi', Valor: cierreStats.transfer },
+      { Concepto: 'Total Ventas', Valor: cierreStats.totalSales },
+      { Concepto: 'Gastos', Valor: cierreStats.expensesTotal },
+      { Concepto: 'Base de Caja', Valor: Number(baseCaja) || 0 },
+      { Concepto: 'Efectivo Esperado', Valor: cierreStats.expectedCash },
+      { Concepto: 'Efectivo Contado', Valor: cierreStats.physicalCash },
+      { Concepto: 'Diferencia', Valor: cierreDiscrepancy },
+    ]
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Cierre de Caja')
+    XLSX.writeFile(wb, `cierre_caja_${format(new Date(), 'yyyy-MM-dd_HHmm')}.xlsx`)
+    toast({ title: "Exportado", description: "Reporte exportado a Excel." })
+  }
+
   if (!mounted) return null;
 
   return (
@@ -319,6 +533,13 @@ export default function POSPage() {
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="h-9 px-4 rounded-xl border-secondary text-secondary font-black text-[8px] uppercase tracking-widest hover:bg-secondary hover:text-white transition-all"
+              onClick={openCierreCaja}
+            >
+              <Lock className="mr-2 h-3 w-3" /> Cierre de Caja
+            </Button>
             <Button 
               variant="outline" 
               className="h-9 px-4 rounded-xl border-primary text-primary font-black text-[8px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
@@ -624,6 +845,154 @@ export default function POSPage() {
           </div>
         </CardFooter>
       </Card>
+
+      {/* Cierre de Caja Dialog */}
+      <Dialog open={showCierreCaja} onOpenChange={setShowCierreCaja}>
+        <DialogContent className="max-w-lg rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+          <div className="p-6 bg-slate-900 text-white flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-secondary/20 flex items-center justify-center border border-white/10">
+                <Lock className="h-5 w-5 text-secondary" />
+              </div>
+              <DialogTitle className="text-lg font-black uppercase tracking-tighter">Cierre de Caja: Paso {cierreStep} de 5</DialogTitle>
+            </div>
+          </div>
+          <div className="p-6">
+            {cierreStep === 1 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center space-y-1">
+                  <h3 className="text-xl font-black uppercase text-slate-900">1. Resumen de Ventas</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase italic">Totales del turno actual</p>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <div className="flex items-center gap-2"><Banknote className="h-4 w-4 text-emerald-600" /><span className="text-[10px] font-black uppercase text-emerald-800">Efectivo</span></div>
+                    <span className="text-lg font-black text-emerald-900">{formatCurrencyDetailed(cierreStats.cash)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-blue-600" /><span className="text-[10px] font-black uppercase text-blue-800">Datáfono</span></div>
+                    <span className="text-lg font-black text-blue-900">{formatCurrencyDetailed(cierreStats.card)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                    <div className="flex items-center gap-2"><Smartphone className="h-4 w-4 text-purple-600" /><span className="text-[10px] font-black uppercase text-purple-800">Transferencia/Nequi</span></div>
+                    <span className="text-lg font-black text-purple-900">{formatCurrencyDetailed(cierreStats.transfer)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-red-50 rounded-2xl border border-red-100">
+                    <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-red-600" /><span className="text-[10px] font-black uppercase text-red-800">Gastos</span></div>
+                    <span className="text-lg font-black text-red-900">{formatCurrencyDetailed(cierreStats.expensesTotal)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-slate-900 rounded-2xl text-white">
+                    <span className="text-[10px] font-black uppercase">Total Ventas ({cierreStats.salesCount} transacciones)</span>
+                    <span className="text-2xl font-black">{formatCurrencyDetailed(cierreStats.totalSales)}</span>
+                  </div>
+                </div>
+                <Button className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl" onClick={() => setCierreStep(2)}>
+                  Conteo de Efectivo <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {cierreStep === 2 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center space-y-1">
+                  <h3 className="text-xl font-black uppercase text-slate-900">2. Base de Caja</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase italic">Efectivo que se deja para mañana</p>
+                </div>
+                <Input type="number" value={baseCaja} onChange={e => setBaseCaja(e.target.value)} className="h-20 rounded-2xl bg-slate-50 border-none font-black text-4xl text-primary text-center" placeholder="0" />
+                <div className="flex gap-3">
+                  <Button variant="ghost" className="flex-1 h-12 font-black text-[9px]" onClick={() => setCierreStep(1)}>Atrás</Button>
+                  <Button className="flex-[2] h-12 bg-emerald-600 text-white rounded-xl font-black uppercase text-[9px]" onClick={() => setCierreStep(3)}>Contar Efectivo</Button>
+                </div>
+              </div>
+            )}
+
+            {cierreStep === 3 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center space-y-1">
+                  <h3 className="text-xl font-black uppercase text-slate-900">3. Conteo de Efectivo</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase italic">¿Cuánto dinero hay en caja?</p>
+                </div>
+                <Input type="number" value={efectivoContado} onChange={e => setEfectivoContado(e.target.value)} className="h-24 rounded-[2rem] bg-emerald-50 border-emerald-200 font-black text-4xl text-emerald-900 text-center" placeholder="0" />
+                <div className="flex gap-3">
+                  {[50000, 100000, 200000, 500000].map(amt => (
+                    <Button key={amt} variant="outline" className="flex-1 h-10 rounded-lg border-emerald-200 text-emerald-700 font-black text-[9px]" onClick={() => setEfectivoContado(String(amt))}>
+                      ${(amt/1000)}k
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="ghost" className="flex-1 h-12 font-black text-[9px]" onClick={() => setCierreStep(2)}>Atrás</Button>
+                  <Button className="flex-[2] h-12 bg-slate-900 text-white rounded-xl font-black uppercase text-[9px]" onClick={() => setCierreStep(4)}>Comparar</Button>
+                </div>
+              </div>
+            )}
+
+            {cierreStep === 4 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center space-y-1">
+                  <h3 className="text-xl font-black uppercase text-slate-900">4. Comparación</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase italic">Sistema vs. Efectivo contado</p>
+                </div>
+                <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4 text-[11px] font-mono uppercase">
+                  <div className="flex justify-between"><span>Efectivo sistema:</span><span className="font-black">{formatCurrencyDetailed(cierreStats.cash)}</span></div>
+                  <div className="flex justify-between text-red-600"><span>Gastos:</span><span className="font-black">-{formatCurrencyDetailed(cierreStats.expensesTotal)}</span></div>
+                  <div className="flex justify-between text-slate-400"><span>Base:</span><span className="font-black">-{formatCurrencyDetailed(Number(baseCaja) || 0)}</span></div>
+                  <div className="flex justify-between border-t pt-3"><span>Efectivo esperado:</span><span className="font-black">{formatCurrencyDetailed(cierreStats.expectedCash)}</span></div>
+                  <div className="flex justify-between"><span>Efectivo contado:</span><span className="font-black">{formatCurrencyDetailed(cierreStats.physicalCash)}</span></div>
+                  <div className={cn("flex justify-between text-2xl font-black pt-3 border-t", cierreDiscrepancy < 0 ? "text-red-600" : cierreDiscrepancy > 0 ? "text-green-600" : "text-emerald-600")}>
+                    <span>Diferencia:</span>
+                    <span>{formatCurrencyDetailed(cierreDiscrepancy)}</span>
+                  </div>
+                  {cierreDiscrepancy < 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl border border-red-100">
+                      <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                      <span className="text-[9px] font-bold text-red-700">Hay un faltante de efectivo. Revisa el conteo.</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="ghost" className="flex-1 h-12 font-black text-[9px]" onClick={() => setCierreStep(3)}>Atrás</Button>
+                  <Button className="flex-[2] h-12 bg-slate-900 text-white rounded-xl font-black uppercase text-[9px]" onClick={() => setCierreStep(5)}>Confirmar Cierre</Button>
+                </div>
+              </div>
+            )}
+
+            {cierreStep === 5 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <div className="text-center space-y-1">
+                  <h3 className="text-xl font-black uppercase text-slate-900">5. Entrega de Dinero</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase italic">Cajero entrega efectivo al administrador</p>
+                </div>
+                <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-3 text-center">
+                  <Wallet className="h-10 w-10 text-slate-300 mx-auto" />
+                  <p className="text-sm font-black text-slate-900 uppercase">Efectivo a entregar</p>
+                  <p className="text-3xl font-black text-primary">{formatCurrencyDetailed(cierreStats.physicalCash)}</p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Cajero: {(profile?.displayName || user?.email || '').toUpperCase()}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-4 border-2 border-dashed rounded-xl border-slate-200 text-center">
+                    <PenLine className="h-5 w-5 text-slate-300 mx-auto mb-2" />
+                    <p className="text-[8px] font-black uppercase text-slate-400">Firma Cajero</p>
+                  </div>
+                  <div className="p-4 border-2 border-dashed rounded-xl border-slate-200 text-center">
+                    <PenLine className="h-5 w-5 text-slate-300 mx-auto mb-2" />
+                    <p className="text-[8px] font-black uppercase text-slate-400">Firma Administrador</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="ghost" className="flex-1 h-12 font-black text-[9px]" onClick={() => setCierreStep(4)}>Atrás</Button>
+                  <Button variant="outline" className="h-12 px-4 rounded-xl font-black text-[9px] uppercase" onClick={exportCierreExcel}>
+                    <Download className="mr-2 h-4 w-4" /> Excel
+                  </Button>
+                  <Button className="flex-[2] h-12 bg-emerald-600 text-white rounded-xl font-black uppercase text-[9px] shadow-xl" onClick={finalizeCierreCaja} disabled={isCierreLoading}>
+                    {isCierreLoading ? <Loader2 className="animate-spin h-5 w-5" /> : <><Printer className="mr-2 h-4 w-4" /> Cerrar e Imprimir</>}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
