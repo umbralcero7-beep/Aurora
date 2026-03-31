@@ -95,6 +95,7 @@ export default function DeliveriesPage() {
     address: "",
     notes: ""
   })
+  const [shippingCost, setShippingCost] = useState("")
   const [selectedItems, setSelectedItems] = useState<DeliveryItem[]>([])
 
   useEffect(() => {
@@ -220,7 +221,9 @@ export default function DeliveriesPage() {
     ))
   }
 
-  const total = selectedItems.reduce((acc, i) => acc + (i.price * i.quantity), 0)
+  const subtotal = selectedItems.reduce((acc, i) => acc + (i.price * i.quantity), 0)
+  const shipping = Number(shippingCost) || 0
+  const total = subtotal + shipping
 
   const handlePrint = (order: any) => {
     if (typeof window === 'undefined') return;
@@ -286,6 +289,8 @@ export default function DeliveriesPage() {
       id: deliveryRef.id,
       orderNumber: orderNumber,
       items: selectedItems,
+      subtotal: subtotal,
+      shippingCost: shipping,
       total: total,
       status: "Pendiente",
       venueId: effectiveBusinessId,
@@ -458,6 +463,16 @@ export default function DeliveriesPage() {
                         onChange={(e) => setDeliveryData({...deliveryData, notes: e.target.value})}
                       />
                     </div>
+                    <div className="space-y-1">
+                      <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Costo de Envío</Label>
+                      <Input 
+                        type="number"
+                        placeholder="0"
+                        className="h-12 rounded-xl bg-slate-50 border-none font-black text-sm"
+                        value={shippingCost}
+                        onChange={(e) => setShippingCost(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
                 
@@ -580,6 +595,9 @@ export default function DeliveriesPage() {
 
                 <div className="flex justify-between items-end border-t border-slate-50 pt-6">
                   <div className="space-y-1">
+                    {delivery.shippingCost > 0 && (
+                      <p className="text-[8px] font-bold text-slate-400 uppercase">Envío: {formatCurrencyDetailed(delivery.shippingCost)}</p>
+                    )}
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</p>
                     <p className="text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(delivery.total)}</p>
                   </div>

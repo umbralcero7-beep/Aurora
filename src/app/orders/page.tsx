@@ -1,7 +1,7 @@
 "use client"
 
 import { isSuperUser } from '@/lib/constants';
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { 
   Clock, 
   Search, 
@@ -80,12 +80,27 @@ export default function OrdersPage() {
 
   const { data: orders, isLoading } = useCollection(ordersRef)
 
+  const prevOrderCount = useRef(0)
+
+  useEffect(() => {
+    if (!orders || !mounted) return
+    if (orders.length > prevOrderCount.current && prevOrderCount.current > 0) {
+      try {
+        const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==')
+        audio.volume = 0.3
+        audio.play().catch(() => {})
+      } catch(e) {}
+      toast({ title: "Nueva Comanda!", description: "Ha llegado un nuevo pedido a cocina." })
+    }
+    prevOrderCount.current = orders.length
+  }, [orders?.length, mounted])
+
   const sortedOrders = useMemo(() => {
     if (!orders) return []
     return [...orders].sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
       const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
-      return dateB - dateA
+      return dateA - dateB // Oldest first - most urgent
     })
   }, [orders])
 
@@ -201,13 +216,16 @@ export default function OrdersPage() {
               <p className="text-slate-300 font-black uppercase text-xs tracking-widest px-10">Sin órdenes pendientes en cocina</p>
             </div>
           ) : (
-            filteredOrders.map((order) => (
-              <Card key={order.id} className="rounded-[2rem] border-slate-100 shadow-xl flex flex-col hover:shadow-2xl transition-all duration-500 overflow-hidden bg-white">
-                <CardHeader className="bg-slate-50/50 pb-6 pt-8 px-8 border-b border-slate-100">
+            filteredOrders.map((order) => {
+              const elapsedMin = order.createdAt ? Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 60000) : 0
+              const isUrgent = elapsedMin > 20
+              return (
+              <Card key={order.id} className={cn("rounded-[2rem] shadow-xl flex flex-col hover:shadow-2xl transition-all duration-500 overflow-hidden bg-white", isUrgent ? "border-2 border-red-300 animate-pulse" : "border-slate-100")}>
+                <CardHeader className={cn("pb-6 pt-8 px-8 border-b", isUrgent ? "bg-red-50 border-red-100" : "bg-slate-50/50 border-slate-100")}>
                   <div className="flex justify-between items-start mb-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-primary text-white font-black text-[10px] rounded-lg px-2">#{order.orderNumber || '?'}</Badge>
+                        <Badge className={cn("font-black text-[10px] rounded-lg px-2", isUrgent ? "bg-red-500 text-white" : "bg-primary text-white")}>#{order.orderNumber || '?'}</Badge>
                         <CardTitle className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Mesa {order.tableNumber}</CardTitle>
                       </div>
                       <div className="flex items-center gap-4">
@@ -222,14 +240,15 @@ export default function OrdersPage() {
                       </div>
                     </div>
                     <Badge className={cn("border-none rounded-full font-black text-[8px] uppercase px-3 py-1 shadow-sm", 
-                      order.status === 'Open' ? "bg-orange-500 text-white" : "bg-blue-500 text-white"
+                      isUrgent ? "bg-red-500 text-white" : order.status === 'Open' ? "bg-orange-500 text-white" : "bg-blue-500 text-white"
                     )}>
-                      {order.status === 'Open' ? 'NUEVA' : 'EN PROCESO'}
+                      {isUrgent ? `${elapsedMin} MIN` : order.status === 'Open' ? 'NUEVA' : 'EN PROCESO'}
                     </Badge>
                   </div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
+                  <div className={cn("text-[10px] font-black uppercase flex items-center gap-2", isUrgent ? "text-red-500" : "text-slate-400")}>
                     <Clock className="h-3 w-3" />
                     {order.createdAt ? formatDistanceToNow(new Date(order.createdAt), { locale: dateLocale, addSuffix: true }) : '---'}
+                    {isUrgent && <span className="text-[8px] text-red-600 font-black animate-pulse">URGENTE</span>}
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1 pt-8 px-8">
@@ -258,7 +277,7 @@ export default function OrdersPage() {
                   </Button>
                 </CardFooter>
               </Card>
-            ))
+            )})
           )}
         </div>
       )}

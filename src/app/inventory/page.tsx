@@ -280,17 +280,25 @@ export default function InventoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSupplies.map((p) => (
-                  <TableRow key={p.id} className="hover:bg-slate-50/50 border-b border-slate-50">
+                {filteredSupplies.map((p) => {
+                  const isLowStock = Number(p.stock) <= (p.minStock || 10)
+                  return (
+                  <TableRow key={p.id} className={cn("hover:bg-slate-50/50 border-b border-slate-50", isLowStock && "bg-red-50/50")}>
                     <TableCell className="px-10 py-6"><code className="font-mono text-[10px] font-black text-slate-400 uppercase">{p.sku}</code></TableCell>
-                    <TableCell className="font-black text-xs uppercase text-slate-700">{p.name}</TableCell>
+                    <TableCell className="font-black text-xs uppercase text-slate-700">
+                      {p.name}
+                      {isLowStock && <Badge className="ml-2 bg-red-100 text-red-600 font-black text-[7px] uppercase">BAJO</Badge>}
+                    </TableCell>
                     <TableCell className="text-right px-10">
-                      <span className={cn("font-black text-lg tracking-tighter", Number(p.stock) < 10 ? "text-destructive" : "text-emerald-600")}>
-                        {p.stock} {p.unit}
-                      </span>
+                      <div className="flex items-center justify-end gap-2">
+                        {isLowStock && <AlertCircle className="h-4 w-4 text-red-500" />}
+                        <span className={cn("font-black text-lg tracking-tighter", isLowStock ? "text-destructive" : "text-emerald-600")}>
+                          {p.stock} {p.unit}
+                        </span>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                )})}
               </TableBody>
             </Table>
           </div>

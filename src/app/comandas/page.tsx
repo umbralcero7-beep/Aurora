@@ -204,6 +204,20 @@ export default function ComandasPage() {
     setCart(prev => prev.filter(i => i.id !== id))
   }
 
+  // Mapa de mesa -> minutos transcurridos desde su orden más antigua activa
+  const tableTimings = useMemo(() => {
+    const map: Record<string, { minutes: number; urgent: boolean }> = {}
+    if (!allOrders) return map
+    const now = Date.now()
+    allOrders.filter(o => ['Open', 'Preparing', 'Ready'].includes(o.status) && o.tableNumber).forEach(o => {
+      const elapsed = Math.floor((now - new Date(o.createdAt).getTime()) / 60000)
+      if (!map[o.tableNumber] || elapsed < map[o.tableNumber].minutes) {
+        map[o.tableNumber] = { minutes: elapsed, urgent: elapsed > 20 }
+      }
+    })
+    return map
+  }, [allOrders])
+
   if (!mounted) return null;
 
   return (
@@ -290,19 +304,30 @@ export default function ComandasPage() {
               <LayoutGrid className="h-2 w-2" /> Mesa
             </p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {tables.map(table => (
+              {tables.map(table => {
+                const timing = tableTimings[table]
+                return (
                 <Button 
                   key={table} 
                   variant={selectedTable === table ? "default" : "outline"} 
                   className={cn(
-                    "min-w-[48px] h-10 rounded-xl font-black text-xs transition-all",
-                    selectedTable === table ? "bg-primary text-white scale-105 shadow-lg shadow-primary/20" : "bg-slate-50 border-transparent text-slate-400"
+                    "min-w-[48px] h-10 rounded-xl font-black text-xs transition-all relative",
+                    selectedTable === table ? "bg-primary text-white scale-105 shadow-lg shadow-primary/20" : 
+                    timing?.urgent ? "bg-red-50 border-red-300 text-red-600 animate-pulse" : 
+                    timing ? "bg-amber-50 border-amber-200 text-amber-600" : 
+                    "bg-slate-50 border-transparent text-slate-400"
                   )}
                   onClick={() => setSelectedTable(table)}
                 >
                   {table}
+                  {timing && (
+                    <span className={cn("absolute -top-1 -right-1 text-[6px] font-black h-3.5 w-3.5 rounded-full flex items-center justify-center border-2",
+                      timing.urgent ? "bg-red-500 text-white border-white" : "bg-amber-400 text-white border-white")}>
+                      {timing.minutes}
+                    </span>
+                  )}
                 </Button>
-              ))}
+              )})}
             </div>
           </div>
 

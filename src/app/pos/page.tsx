@@ -103,6 +103,14 @@ export default function POSPage() {
   const [cashReceived, setCashAmount] = useState<number>(0)
   const [activeCategory, setActiveCategory] = useState("Todos")
 
+  // Pago mixto y propina
+  const [isSplitPayment, setIsSplitPayment] = useState(false)
+  const [splitAmount1, setSplitAmount1] = useState("")
+  const [splitMethod1, setSplitMethod1] = useState<'Efectivo' | 'Datafono' | 'Nequi'>('Efectivo')
+  const [splitMethod2, setSplitMethod2] = useState<'Efectivo' | 'Datafono' | 'Nequi'>('Datafono')
+  const [tipAmount, setTipAmount] = useState(0)
+  const [customTip, setCustomTip] = useState("")
+
   // Facturación Electrónica State
   const [isElectronic, setIsElectronic] = useState(false)
   const paymentSectionRef = useRef<HTMLDivElement>(null)
@@ -284,6 +292,12 @@ export default function POSPage() {
     
     const invoiceRef = doc(collection(db, "invoices"))
     const invoiceNum = `INV-${Date.now().toString().slice(-6)}`;
+    const finalTotal = totalToProcess + tipAmount
+    const paymentData = isSplitPayment ? {
+      method: 'Mixto',
+      split: { method1: splitMethod1, amount1: Number(splitAmount1) || 0, method2: splitMethod2, amount2: finalTotal - (Number(splitAmount1) || 0) }
+    } : { method: paymentMethod }
+
     const invoiceData = {
       id: invoiceRef.id,
       orderId: isDirect ? "direct-sale" : selectedOrder.id,
@@ -298,8 +312,10 @@ export default function POSPage() {
       items: cartToProcess,
       subtotal: totalToProcess / 1.15,
       tax: totalToProcess - (totalToProcess / 1.15),
-      total: totalToProcess,
-      paymentMethod: paymentMethod,
+      total: finalTotal,
+      tip: tipAmount,
+      paymentMethod: paymentData.method,
+      splitPayment: isSplitPayment ? paymentData.split : null,
       timestamp: new Date().toISOString(),
       businessId: effectiveBusinessId,
       venueId: effectiveBusinessId,
@@ -371,6 +387,15 @@ export default function POSPage() {
     : (selectedOrder?.total || 0)
 
   const openCierreCaja = () => {
+    const openOrdersCount = activeOrders?.length || 0
+    if (openOrdersCount > 0) {
+      toast({ 
+        variant: "destructive", 
+        title: "Órdenes Abiertas", 
+        description: `Hay ${openOrdersCount} órdenes sin cobrar. Ciérralas antes de hacer el cierre de caja.`
+      })
+      return
+    }
     setCierreStep(1)
     setEfectivoContado("")
     setBaseCaja("")
@@ -776,29 +801,79 @@ export default function POSPage() {
                   </div>
 
                   <div ref={paymentSectionRef} className="p-4 space-y-4">
-                    <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest text-center">Método de Recaudo</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: 'Efectivo', icon: Banknote, color: 'bg-emerald-500' },
-                        { id: 'Datafono', icon: CreditCard, color: 'bg-blue-500' },
-                        { id: 'Nequi', icon: Smartphone, color: 'bg-purple-500' }
-                      ].map(m => (
-                        <button 
-                          key={m.id} 
-                          className={cn(
-                            "flex flex-col items-center justify-center h-12 rounded-xl gap-1 border-2 transition-all active:scale-90",
-                            paymentMethod === m.id ? `border-slate-900 ${m.color} text-white shadow-lg` : "bg-white text-slate-400 border-slate-100"
-                          )}
-                          onClick={() => setPaymentMethod(m.id as any)}
-                        >
-                          <m.icon className="h-3 w-3" />
-                          <span className="font-black text-[7px] uppercase tracking-tighter">{m.id}</span>
-                        </button>
-                      ))}
+                    {/* Propina */}
+                    <div>
+                      <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest text-center mb-2">Propina</p>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {[0, 2000, 5000, 10000].map(amt => (
+                          <button key={amt} onClick={() => { setTipAmount(amt); setCustomTip("") }}
+                            className={cn("h-8 rounded-lg text-[8px] font-black border transition-all", tipAmount === amt && !customTip ? "bg-amber-500 text-white border-amber-600" : "bg-white text-slate-500 border-slate-100")}>
+                            {amt === 0 ? 'Sin' : `$${(amt/1000)}k`}
+                          </button>
+                        ))}
+                        <input type="number" placeholder="Otro" value={customTip}
+                          onChange={e => { setCustomTip(e.target.value); setTipAmount(Number(e.target.value) || 0) }}
+                          className="h-8 rounded-lg text-[8px] font-bold text-center bg-white border border-slate-100 w-full" />
+                      </div>
                     </div>
+
+                    {/* Pago Mixto Toggle */}
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                      <span className="text-[8px] font-black uppercase text-slate-500">Pago Mixto</span>
+                      <button onClick={() => setIsSplitPayment(!isSplitPayment)}
+                        className={cn("h-6 w-11 rounded-full transition-all flex items-center px-1", isSplitPayment ? "bg-primary justify-end" : "bg-slate-200 justify-start")}>
+                        <div className="h-4 w-4 rounded-full bg-white shadow" />
+                      </button>
+                    </div>
+
+                    {isSplitPayment ? (
+                      <div className="space-y-3">
+                        <p className="text-[8px] font-black uppercase text-slate-400 text-center">Parte 1</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['Efectivo', 'Datafono', 'Nequi'].map(m => (
+                            <button key={m} onClick={() => setSplitMethod1(m as any)}
+                              className={cn("flex items-center justify-center h-9 rounded-lg gap-1 border-2 text-[7px] font-black uppercase transition-all", splitMethod1 === m ? "border-slate-900 bg-slate-900 text-white" : "border-slate-100 text-slate-400")}>
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                        <Input type="number" value={splitAmount1} onChange={e => setSplitAmount1(e.target.value)}
+                          placeholder="Monto parte 1" className="h-10 rounded-xl bg-slate-50 border-slate-100 text-center font-black" />
+                        <div className="flex justify-between text-[9px] font-bold text-slate-500 px-2">
+                          <span>Parte 2 ({splitMethod2}):</span>
+                          <span className="font-black text-slate-900">{formatCurrencyDetailed(currentTotal + tipAmount - (Number(splitAmount1) || 0))}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['Efectivo', 'Datafono', 'Nequi'].map(m => (
+                            <button key={m} onClick={() => setSplitMethod2(m as any)}
+                              className={cn("flex items-center justify-center h-7 rounded-lg gap-1 border-2 text-[6px] font-black uppercase transition-all", splitMethod2 === m ? "border-slate-900 bg-slate-100 text-slate-900" : "border-slate-100 text-slate-400")}>
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest text-center">Método de Recaudo</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'Efectivo', icon: Banknote, color: 'bg-emerald-500' },
+                            { id: 'Datafono', icon: CreditCard, color: 'bg-blue-500' },
+                            { id: 'Nequi', icon: Smartphone, color: 'bg-purple-500' }
+                          ].map(m => (
+                            <button key={m.id} onClick={() => setPaymentMethod(m.id as any)}
+                              className={cn("flex flex-col items-center justify-center h-12 rounded-xl gap-1 border-2 transition-all active:scale-90",
+                                paymentMethod === m.id ? `border-slate-900 ${m.color} text-white shadow-lg` : "bg-white text-slate-400 border-slate-100")}>
+                              <m.icon className="h-3 w-3" />
+                              <span className="font-black text-[7px] uppercase tracking-tighter">{m.id}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {paymentMethod === 'Efectivo' && (
+                  {(!isSplitPayment && paymentMethod === 'Efectivo') && (
                     <div className="p-4 space-y-3 bg-emerald-50/30 border-y border-emerald-100">
                       <div className="grid grid-cols-4 gap-1.5">
                         {[10000, 20000, 50000, 100000].map(amt => (
@@ -822,9 +897,21 @@ export default function POSPage() {
         </CardContent>
 
         <CardFooter className="p-4 bg-white border-t flex flex-col gap-4 shrink-0">
-          <div className="w-full flex justify-between items-end border-b pb-3">
-            <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Total</span>
-            <span className="text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(currentTotal)}</span>
+          <div className="w-full space-y-1">
+            <div className="flex justify-between items-end">
+              <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Subtotal</span>
+              <span className="text-lg font-black text-slate-400">{formatCurrencyDetailed(currentTotal)}</span>
+            </div>
+            {tipAmount > 0 && (
+              <div className="flex justify-between items-end">
+                <span className="text-[9px] font-black uppercase text-amber-500 tracking-widest">Propina</span>
+                <span className="text-sm font-black text-amber-600">+{formatCurrencyDetailed(tipAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-end border-t pt-2">
+              <span className="text-[9px] font-black uppercase text-slate-900 tracking-widest">Total a Cobrar</span>
+              <span className="text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(currentTotal + tipAmount)}</span>
+            </div>
           </div>
           <div className="grid grid-cols-4 gap-2 w-full">
             <Button 
