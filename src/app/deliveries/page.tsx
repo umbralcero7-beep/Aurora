@@ -46,7 +46,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useLanguage } from "@/context/language-context"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, updateDoc, doc, where, getDocs, setDoc } from "firebase/firestore"
+import { collection, query, orderBy, updateDoc, doc, where, getDocs, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { formatDistanceToNow, format } from "date-fns"
@@ -88,6 +88,14 @@ export default function DeliveriesPage() {
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false)
   const [customerRecognized, setCustomerRecognized] = useState(false)
   const [viewMode, setViewMode] = useState<'active' | 'cancelled'>('active')
+
+  // Password verification for printing
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [printingOrder, setPrintingOrder] = useState<any>(null)
+  const [adminPassword, setAdminPassword] = useState("")
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false)
+  const [printError, setPrintError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const [deliveryData, setDeliveryData] = useState({
     customerName: "",
@@ -226,6 +234,15 @@ export default function DeliveriesPage() {
   const total = subtotal + shipping
 
   const handlePrint = (order: any) => {
+    if (profile?.role !== 'ADMIN' && profile?.role !== 'SUPPORT' && !isSuper) {
+      setPrintingOrder(order)
+      setShowPasswordDialog(true)
+      return
+    }
+    executePrint(order)
+  }
+
+  const executePrint = (order: any) => {
     if (typeof window === 'undefined') return;
     const windowPrint = window.open('', '', 'width=600,height=800');
     if (windowPrint) {
@@ -266,6 +283,38 @@ export default function DeliveriesPage() {
       windowPrint.document.close();
       windowPrint.focus();
       setTimeout(() => { windowPrint.print(); windowPrint.close(); }, 500);
+    }
+  }
+
+  const handlePasswordVerify = async () => {
+    if (!adminPassword || !printingOrder) {
+      setPrintError(language === 'es' ? "Ingresa la contraseña" : "Enter the password")
+      return
+    }
+    setIsVerifyingPassword(true)
+    setPrintError(null)
+
+    try {
+      if (!db || !user?.email) return
+      const userDoc = await getDoc(doc(db, 'users', user.email.toLowerCase()))
+      if (!userDoc.exists()) {
+        setPrintError(language === 'es' ? "Usuario no encontrado" : "User not found")
+        setIsVerifyingPassword(false)
+        return
+      }
+      const userData = userDoc.data()
+      if (userData.passwordHash === adminPassword) {
+        executePrint(printingOrder)
+        setShowPasswordDialog(false)
+        setAdminPassword("")
+        setPrintingOrder(null)
+      } else {
+        setPrintError(language === 'es' ? "Contraseña incorrecta" : "Incorrect password")
+      }
+    } catch (err) {
+      setPrintError(language === 'es' ? "Error al verificar" : "Error verifying")
+    } finally {
+      setIsVerifyingPassword(false)
     }
   }
 
@@ -647,6 +696,50 @@ export default function DeliveriesPage() {
           <DialogFooter>
             <Button className="w-full h-16 bg-destructive hover:bg-destructive/90 text-white rounded-2xl font-black text-[10px] uppercase" onClick={confirmCancellation} disabled={!cancelReason.trim() || confirmOrderNum !== cancellingDelivery?.orderNumber.toString()}>
               Ejecutar Anulación
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Dialog for Printing */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="max-w-sm rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+          <DialogHeader className="p-8 bg-slate-900 text-white">
+            <DialogTitle className="text-lg font-black uppercase flex items-center gap-3">
+              <Printer className="h-5 w-5" />
+              {language === 'es' ? 'Impresión Restringida' : 'Restricted Printing'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-8 space-y-6">
+            <p className="text-sm text-slate-500 text-center">
+              {language === 'es' 
+                ? 'Ingresa tu contraseña de ADMIN para imprimir este domicilio.'
+                : 'Enter your ADMIN password to print this delivery.'}
+            </p>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
+                {language === 'es' ? 'Contraseña' : 'Password'}
+              </Label>
+              <Input 
+                type="password"
+                className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center"
+                placeholder="••••••••"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePasswordVerify()}
+              />
+              {printError && (
+                <p className="text-xs text-destructive font-bold text-center">{printError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="p-8 pt-0">
+            <Button 
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black text-[10px] uppercase" 
+              onClick={handlePasswordVerify}
+              disabled={isVerifyingPassword || !adminPassword}
+            >
+              {isVerifyingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === 'es' ? 'Imprimir' : 'Print')}
             </Button>
           </DialogFooter>
         </DialogContent>
