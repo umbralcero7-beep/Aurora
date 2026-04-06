@@ -20,7 +20,8 @@ import {
   ChefHat,
   Briefcase,
   Scale,
-  Sparkles
+  Sparkles,
+  Key
 } from "lucide-react"
 
 import {
@@ -145,7 +146,7 @@ export function AppSidebar() {
       label: t.navGroups.operations,
       items: [
         { title: t.nav.dashboard, url: "/", icon: LayoutDashboard, roles: ['ADMIN', 'SUPPORT', 'FINANCE', 'INVENTORY', 'RECEPTIONIST'] },
-        { title: t.nav.waiterOrders, url: "/comandas", icon: ShoppingCart, roles: ['ADMIN', 'WAITER', 'SUPPORT'], alert: hasNotifications },
+        { title: t.nav.waiterOrders, url: "/comandas", icon: ShoppingCart, roles: ['ADMIN', 'WAITER', 'SUPPORT'], alert: hasNotifications || false },
         { title: t.nav.pos, url: "/pos", icon: Receipt, roles: ['ADMIN', 'CASHIER', 'SUPPORT'] },
         { title: t.nav.menu, url: "/menu", icon: UtensilsCrossed, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'RECEPTIONIST', 'CHEF'] },
         { title: t.nav.deliveries, url: "/deliveries", icon: Truck, roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT'] },
@@ -170,6 +171,7 @@ export function AppSidebar() {
         { title: t.nav.users, url: "/settings/users", icon: Users, roles: ['ADMIN', 'SUPPORT'] },
         { title: t.nav.venues, url: "/settings/venues", icon: Globe, roles: ['SUPPORT'] },
         { title: t.nav.marketplace, url: "/marketplace", icon: Puzzle, roles: ['ADMIN', 'SUPPORT'] },
+        { title: 'Licencias', url: "/settings/licenses", icon: Key, roles: ['SUPPORT'] },
       ],
     },
     {

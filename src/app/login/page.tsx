@@ -1,6 +1,7 @@
 'use client';
 
 import { isSuperUser } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useAuth, useFirestore } from '@/firebase';
 import { 
@@ -19,7 +20,9 @@ import {
   ChevronDown,
   ShieldCheck,
   Globe,
-  Info
+  Info,
+  Key,
+  Fingerprint
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -33,6 +36,35 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { verifyTOTP } from '@/lib/totp';
+
+function validatePassword(password: string, lang: 'es' | 'en'): string | null {
+  const minLength = 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+  if (password.length < minLength) {
+    return lang === 'es' 
+      ? `La contraseña debe tener al menos ${minLength} caracteres` 
+      : `Password must be at least ${minLength} characters`;
+  }
+
+  const requirements = [];
+  if (!hasUpperCase) requirements.push(lang === 'es' ? 'mayúsculas' : 'uppercase');
+  if (!hasLowerCase) requirements.push(lang === 'es' ? 'minúsculas' : 'lowercase');
+  if (!hasNumber) requirements.push(lang === 'es' ? 'números' : 'numbers');
+  if (!hasSpecialChar) requirements.push(lang === 'es' ? 'carácter especial' : 'special character');
+
+  if (requirements.length > 0) {
+    return lang === 'es'
+      ? `La contraseña debe contener: ${requirements.join(', ')}`
+      : `Password must contain: ${requirements.join(', ')}`;
+  }
+
+  return null;
+}
 
 export default function LoginPage() {
   const auth = useAuth();
@@ -49,6 +81,12 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  
+  const [show2FA, setShow2FA] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [pendingPassword, setPendingPassword] = useState<string | null>(null);
+  const [userSecret, setUserSecret] = useState<string | null>(null);
 
   // Hydration Guard: Asegura que el componente solo se renderice en el cliente
   useEffect(() => {
@@ -57,16 +95,34 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
+    if (!auth || !db) return;
     setLoading(true);
     setError(null);
 
     try {
+      const emailLower = email.trim().toLowerCase();
+      
       await setPersistence(
         auth, 
         keepSession ? browserLocalPersistence : browserSessionPersistence
       );
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      
+      const userCred = await signInWithEmailAndPassword(auth, emailLower, password);
+      
+      const userDoc = await getDoc(doc(db, 'users', emailLower));
+      const has2FA = userDoc.exists() && userDoc.data().has2FA === true;
+      const secret = userDoc.data()?.totpSecret;
+      
+      if (has2FA && secret) {
+        await auth.signOut();
+        setPendingEmail(emailLower);
+        setPendingPassword(password);
+        setUserSecret(secret);
+        setShow2FA(true);
+        setLoading(false);
+        return;
+      }
+      
       router.push('/');
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
@@ -85,11 +141,61 @@ export default function LoginPage() {
     }
   };
 
+  const handle2FAVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth || !userSecret) return;
+    setLoading(true);
+    setError(null);
+
+    const isValid = verifyTOTP(userSecret, twoFactorCode);
+    
+    if (!isValid) {
+      setError(language === 'es' 
+        ? "Código inválido. Intenta de nuevo." 
+        : "Invalid code. Try again.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await setPersistence(
+        auth, 
+        keepSession ? browserLocalPersistence : browserSessionPersistence
+      );
+      await signInWithEmailAndPassword(auth, pendingEmail!, pendingPassword!);
+      router.push('/');
+    } catch (err: any) {
+      setError(language === 'es' ? "Error de conexión." : "Connection error.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handle2FASkip = async () => {
+    if (!auth) return;
+    try {
+      await auth.signOut();
+    } catch {}
+    setShow2FA(false);
+    setTwoFactorCode('');
+    setPendingEmail(null);
+    setPendingPassword(null);
+    setUserSecret(null);
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !db) return;
     setLoading(true);
     setError(null);
+
+    const lang = language === 'es' ? 'es' : 'en';
+    const passwordError = validatePassword(password, lang);
+    if (passwordError) {
+      setError(passwordError);
+      setLoading(false);
+      return;
+    }
 
     try {
       const emailLower = email.toLowerCase().trim();
@@ -166,7 +272,10 @@ export default function LoginPage() {
 
         <div className="w-full bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-2xl shadow-slate-200/60 relative overflow-hidden group">
           <h2 className="text-xl font-black text-slate-900 text-center mb-10 tracking-tight">
-            {showRegister ? (language === 'es' ? 'Crear Perfil' : 'Create Profile') : (language === 'es' ? 'Iniciar Sesión' : 'Sign In')}
+            {show2FA 
+              ? (language === 'es' ? 'Verificación en Dos Pasos' : 'Two-Factor Verification')
+              : (showRegister ? (language === 'es' ? 'Crear Perfil' : 'Create Profile') : (language === 'es' ? 'Iniciar Sesión' : 'Sign In'))
+            }
           </h2>
 
           {error && (
@@ -176,7 +285,44 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form onSubmit={showRegister ? handleRegister : handleEmailLogin} className="space-y-8 relative z-10">
+          {show2FA ? (
+            <form onSubmit={handle2FAVerify} className="space-y-8 relative z-10">
+              <div className="flex justify-center mb-6">
+                <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Fingerprint className="h-8 w-8 text-primary" />
+                </div>
+              </div>
+              <p className="text-center text-sm text-slate-500 mb-6">
+                {language === 'es' 
+                  ? `Ingresa el código de verificación para ${pendingEmail}`
+                  : `Enter the verification code for ${pendingEmail}`
+                }
+              </p>
+              
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Código de Verificación</Label>
+                <Input 
+                  type="text" 
+                  placeholder="000000"
+                  className="h-14 bg-slate-50 border-slate-100 text-slate-900 rounded-2xl px-6 text-center text-2xl tracking-[0.5em] font-mono"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <Button type="submit" className="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all active:scale-[0.98]" disabled={loading || twoFactorCode.length !== 6}>
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (language === 'es' ? 'Verificar' : 'Verify')}
+              </Button>
+
+              <button type="button" onClick={handle2FASkip} className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest py-2">
+                {language === 'es' ? '← Volver' : '← Back'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={showRegister ? handleRegister : handleEmailLogin} className="space-y-8 relative z-10">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Email Corporativo</Label>
               <Input 
@@ -199,6 +345,17 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              {showRegister && password.length > 0 && (
+                <div className="mt-2 p-3 bg-slate-50/50 rounded-xl space-y-1.5">
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{language === 'es' ? 'La contraseña debe contener:' : 'Password must contain:'}</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <span className={cn("text-[9px] font-medium", password.length >= 8 ? "text-emerald-600" : "text-slate-400")}>{language === 'es' ? '✓ Mínimo 8 caracteres' : '✓ Min 8 characters'}</span>
+                    <span className={cn("text-[9px] font-medium", /[A-Z]/.test(password) ? "text-emerald-600" : "text-slate-400")}>{language === 'es' ? '✓ Mayúsculas' : '✓ Uppercase'}</span>
+                    <span className={cn("text-[9px] font-medium", /[a-z]/.test(password) ? "text-emerald-600" : "text-slate-400")}>{language === 'es' ? '✓ Minúsculas' : '✓ Lowercase'}</span>
+                    <span className={cn("text-[9px] font-medium", /[0-9]/.test(password) ? "text-emerald-600" : "text-slate-400")}>{language === 'es' ? '✓ Números' : '✓ Numbers'}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center space-x-3 px-2">
@@ -232,6 +389,7 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+          )}
         </div>
 
         <div className="mt-16 flex flex-col items-center gap-4 text-center opacity-30">

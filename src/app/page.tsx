@@ -52,6 +52,7 @@ import { doc, collection, query, where, limit, orderBy } from "firebase/firestor
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { StockAlerts } from "@/components/stock-alerts"
 
 export default function Dashboard() {
   const router = useRouter();
@@ -200,6 +201,8 @@ export default function Dashboard() {
                <p className="text-[8px] font-black uppercase text-slate-300">Terminal Sincronizada</p>
             </CardContent>
           </Card>
+
+          <StockAlerts />
         </div>
 
         <div className="lg:col-span-4 space-y-4 md:space-y-6">

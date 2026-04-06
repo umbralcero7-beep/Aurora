@@ -27,8 +27,10 @@ service cloud.firestore {
       // Solo el dueño o soporte puede leer el perfil completo
       allow read: if request.auth != null && (request.auth.token.email.lower() == email.lower() || isSuperUser() || getProfile().role == 'SUPPORT');
       // Solo el dueño puede crear/editar su perfil, pero NO cambiar su propio ROL (prevención de escalada)
+      // Los campos sensibles de 2FA (has2FA, totpSecret, backupCodes) solo pueden ser modificados por el propio usuario o super admin
       allow write: if request.auth != null && (request.auth.token.email.lower() == email.lower() || isSuperUser()) && 
-                    (resource == null || request.resource.data.role == resource.data.role || isSuperUser() || getProfile().role == 'SUPPORT');
+                    (resource == null || request.resource.data.role == resource.data.role || isSuperUser() || getProfile().role == 'SUPPORT') &&
+                    (request.resource.data.has2FA == resource.data.has2FA || request.auth.token.email.lower() == email.lower() || isSuperUser());
     }
 
     // Reglas para Facturas (Invoices)

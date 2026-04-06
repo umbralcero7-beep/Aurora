@@ -11,12 +11,12 @@ export const POS_PREFIX = "AUR-";
 export const POS_RESOLUTION_NUMBER = "1876400000"; // Mock Resolution
 
 // Super Users - Single source of truth
-const SUPER_USER_EMAILS = [
+const SUPER_USER_EMAILS: string[] = [
   'umbralcero7@gmail.com',
   'amaroisaias611@gmail.com',
-] as const;
+];
 
-const SUPER_USER_SET = new Set(SUPER_USER_EMAILS);
+const SUPER_USER_SET = new Set(SUPER_USER_EMAILS.map(e => e.toLowerCase()));
 
 export function isSuperUser(email: string | null | undefined): boolean {
   if (!email) return false;

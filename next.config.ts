@@ -1,7 +1,6 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -18,7 +17,7 @@ const nextConfig: NextConfig = {
   async headers() {
     const cspHeader = `
       default-src 'self';
-      script-src 'self' 'unsafe-eval' 'unsafe-inline';
+      script-src 'self';
       style-src 'self' 'unsafe-inline';
       img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos;
       font-src 'self';
@@ -26,8 +25,10 @@ const nextConfig: NextConfig = {
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
-      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com;
+      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com;
       upgrade-insecure-requests;
+      frame-ancestors 'none';
+      sandbox allow-same-origin allow-scripts;
     `.replace(/\s{2,}/g, ' ').trim();
 
     return [
@@ -39,6 +40,9 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
         ],
       },
     ];

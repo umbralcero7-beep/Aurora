@@ -117,7 +117,7 @@ export default function AnomalyDetectionPage() {
             </div>
           </CardContent>
         </Card>
-      ) : (
+      ) : result ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Card className={result.anomaliesDetected ? "border-destructive/50 bg-destructive/5" : "border-emerald-500/50 bg-emerald-50/50"}>
             <CardHeader>
@@ -142,7 +142,7 @@ export default function AnomalyDetectionPage() {
             </CardContent>
           </Card>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
