@@ -88,14 +88,46 @@ export default function LoginPage() {
   const [pendingPassword, setPendingPassword] = useState<string | null>(null);
   const [userSecret, setUserSecret] = useState<string | null>(null);
 
+  // Rate limiting
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const isLocked = lockoutUntil !== null && Date.now() < lockoutUntil;
+
   // Hydration Guard: Asegura que el componente solo se renderice en el cliente
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Check lockout on mount
+  useEffect(() => {
+    const storedLockout = localStorage.getItem('aurora_lockout');
+    if (storedLockout) {
+      const lockoutTime = parseInt(storedLockout);
+      if (Date.now() < lockoutTime) {
+        setLockoutUntil(lockoutTime);
+        const remaining = Math.ceil((lockoutTime - Date.now()) / 1000);
+        setError(language === 'es' 
+          ? `Demasiados intentos. Intenta en ${remaining} segundos.`
+          : `Too many attempts. Try again in ${remaining} seconds.`);
+      } else {
+        localStorage.removeItem('aurora_lockout');
+      }
+    }
+  }, [language]);
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !db) return;
+
+    // Rate limiting check
+    if (isLocked) {
+      const remaining = Math.ceil((lockoutUntil! - Date.now()) / 1000);
+      setError(language === 'es' 
+        ? `Demasiados intentos fallidos. Intenta en ${remaining} segundos.`
+        : `Too many failed attempts. Try again in ${remaining} seconds.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -108,6 +140,11 @@ export default function LoginPage() {
       );
       
       const userCred = await signInWithEmailAndPassword(auth, emailLower, password);
+      
+      // Reset failed attempts on successful login
+      setFailedAttempts(0);
+      setLockoutUntil(null);
+      localStorage.removeItem('aurora_lockout');
       
       const userDoc = await getDoc(doc(db, 'users', emailLower));
       const has2FA = userDoc.exists() && userDoc.data().has2FA === true;
@@ -125,10 +162,24 @@ export default function LoginPage() {
       
       router.push('/');
     } catch (err: any) {
+      // Track failed attempts
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError(language === 'es' 
-          ? "Credenciales no válidas. Si es tu primera vez, pulsa 'Crear Perfil' abajo." 
-          : "Invalid credentials. If it's your first time, click 'Create Profile' below.");
+        // Lock out after 5 failed attempts
+        if (newAttempts >= 5) {
+          const lockoutTime = Date.now() + 15 * 60 * 1000; // 15 minutes
+          setLockoutUntil(lockoutTime);
+          localStorage.setItem('aurora_lockout', lockoutTime.toString());
+          setError(language === 'es' 
+            ? "Demasiados intentos fallidos. Bloqueado por 15 minutos."
+            : "Too many failed attempts. Locked for 15 minutes.");
+        } else {
+          setError(language === 'es' 
+            ? `Credenciales no válidas. ${5 - newAttempts} intentos restantes.`
+            : `Invalid credentials. ${5 - newAttempts} attempts remaining.`);
+        }
       } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
         setError(language === 'es' 
           ? "Sin conexión a internet. Verifica tu red e intenta de nuevo." 
@@ -144,18 +195,46 @@ export default function LoginPage() {
   const handle2FAVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !userSecret) return;
+
+    // Rate limiting check for 2FA
+    if (isLocked) {
+      const remaining = Math.ceil((lockoutUntil! - Date.now()) / 1000);
+      setError(language === 'es' 
+        ? `Demasiados intentos. Intenta en ${remaining} segundos.`
+        : `Too many attempts. Try again in ${remaining} seconds.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     const isValid = verifyTOTP(userSecret, twoFactorCode);
     
     if (!isValid) {
-      setError(language === 'es' 
-        ? "Código inválido. Intenta de nuevo." 
-        : "Invalid code. Try again.");
+      // Track failed 2FA attempts
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      
+      if (newAttempts >= 5) {
+        const lockoutTime = Date.now() + 15 * 60 * 1000;
+        setLockoutUntil(lockoutTime);
+        localStorage.setItem('aurora_lockout', lockoutTime.toString());
+        setError(language === 'es' 
+          ? "Demasiados intentos fallidos de 2FA. Bloqueado por 15 minutos."
+          : "Too many failed 2FA attempts. Locked for 15 minutes.");
+      } else {
+        setError(language === 'es' 
+          ? `Código inválido. ${5 - newAttempts} intentos restantes.` 
+          : `Invalid code. ${5 - newAttempts} attempts remaining.`);
+      }
       setLoading(false);
       return;
     }
+
+    // Reset failed attempts on successful 2FA
+    setFailedAttempts(0);
+    setLockoutUntil(null);
+    localStorage.removeItem('aurora_lockout');
 
     try {
       await setPersistence(
@@ -186,6 +265,16 @@ export default function LoginPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || !db) return;
+
+    // Rate limiting check
+    if (isLocked) {
+      const remaining = Math.ceil((lockoutUntil! - Date.now()) / 1000);
+      setError(language === 'es' 
+        ? `Demasiados intentos. Intenta en ${remaining} segundos.`
+        : `Too many attempts. Try again in ${remaining} seconds.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -217,12 +306,22 @@ export default function LoginPage() {
         keepSession ? browserLocalPersistence : browserSessionPersistence
       );
       await createUserWithEmailAndPassword(auth, emailLower, password);
+      
+      // Reset failed attempts on successful registration
+      setFailedAttempts(0);
+      setLockoutUntil(null);
+      localStorage.removeItem('aurora_lockout');
+      
       toast({ 
         title: language === 'es' ? "Acceso Concedido" : "Access Granted", 
         description: language === 'es' ? "Bienvenido a Aurora." : "Welcome to Aurora." 
       });
       router.push('/');
     } catch (err: any) {
+      // Track failed registration attempts
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      
       if (err.code === 'auth/email-already-in-use') {
         setError(language === 'es' ? "Este correo ya está registrado." : "This email is already in use.");
       } else if (err.code === 'auth/weak-password') {
