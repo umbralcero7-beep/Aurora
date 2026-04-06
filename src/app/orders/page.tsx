@@ -29,7 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, updateDoc, doc, where, setDoc } from "firebase/firestore"
+import { collection, query, orderBy, limit, updateDoc, doc, where, setDoc } from "firebase/firestore"
 import { useLanguage } from "@/context/language-context"
 import { formatDistanceToNow } from "date-fns"
 import { es, enUS } from "date-fns/locale"
@@ -67,14 +67,21 @@ export default function OrdersPage() {
     const baseQuery = collection(db, "orders");
     
     if (isSupport) {
-      return query(baseQuery, where("status", "in", ["Open", "Preparing"]))
+      return query(
+        baseQuery, 
+        where("createdAt", ">=", new Date(Date.now() - 24 * 60 * 60 * 1000)),
+        orderBy("createdAt", "desc"),
+        limit(100)
+      )
     }
     
     if (!effectiveBusinessId) return null
     return query(
       baseQuery, 
       where("businessId", "==", effectiveBusinessId),
-      where("status", "in", ["Open", "Preparing"])
+      where("createdAt", ">=", new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      orderBy("createdAt", "desc"),
+      limit(100)
     )
   }, [db, effectiveBusinessId, isSupport])
 

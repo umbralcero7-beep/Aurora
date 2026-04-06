@@ -46,7 +46,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useLanguage } from "@/context/language-context"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, updateDoc, doc, where, getDocs, getDoc, setDoc } from "firebase/firestore"
+import { collection, query, orderBy, limit, updateDoc, doc, where, getDocs, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { formatDistanceToNow, format } from "date-fns"
@@ -124,12 +124,17 @@ export default function DeliveriesPage() {
 
   const deliveriesRef = useMemoFirebase(() => {
     if (!db) return null
-    if (isSupport) return query(collection(db, "deliveries"), orderBy("createdAt", "desc"))
+    if (isSupport) return query(
+      collection(db, "deliveries"), 
+      orderBy("createdAt", "desc"),
+      limit(100)
+    )
     if (!effectiveBusinessId) return null
     return query(
       collection(db, "deliveries"), 
       where("venueId", "==", effectiveBusinessId),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(100)
     )
   }, [db, effectiveBusinessId, isSupport])
 

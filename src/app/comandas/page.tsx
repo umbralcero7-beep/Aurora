@@ -36,7 +36,7 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, where, doc, setDoc } from "firebase/firestore"
+import { collection, query, where, orderBy, limit, doc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { errorEmitter } from "@/firebase/error-emitter"
@@ -95,7 +95,10 @@ export default function ComandasPage() {
     if (!db || !effectiveBusinessId) return null
     return query(
       collection(db, "orders"),
-      where("businessId", "==", effectiveBusinessId)
+      where("businessId", "==", effectiveBusinessId),
+      where("createdAt", ">=", new Date(Date.now() - 24 * 60 * 60 * 1000)), // Solo últimas 24 horas
+      orderBy("createdAt", "desc"),
+      limit(100) // Límite para rendimiento
     )
   }, [db, effectiveBusinessId])
   

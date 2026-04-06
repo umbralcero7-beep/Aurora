@@ -27,7 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useLanguage } from "@/context/language-context"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, where, doc } from "firebase/firestore"
+import { collection, query, orderBy, limit, where, doc } from "firebase/firestore"
 import { formatCurrencyDetailed, cn } from "@/lib/utils"
 
 // Carta Aurora Precargada para Respaldo Demo
@@ -63,12 +63,17 @@ export default function MenuPage() {
 
   const menuRef = useMemoFirebase(() => {
     if (!db) return null
-    if (isSupport) return query(collection(db, "menu"), orderBy("name"))
+    if (isSupport) return query(
+      collection(db, "menu"), 
+      orderBy("name"),
+      limit(500)
+    )
     if (!effectiveBusinessId) return null
     return query(
       collection(db, "menu"), 
       where("businessId", "==", effectiveBusinessId),
-      orderBy("name")
+      orderBy("name"),
+      limit(500)
     )
   }, [db, effectiveBusinessId, isSupport])
 

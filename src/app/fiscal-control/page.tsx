@@ -125,17 +125,35 @@ export default function FiscalControlPage() {
 
   const invoicesRef = useMemoFirebase(() => {
     if (!db || !targetBusinessId) return null
-    return query(collection(db, "invoices"), where("businessId", "==", targetBusinessId))
+    return query(
+      collection(db, "invoices"), 
+      where("businessId", "==", targetBusinessId),
+      where("timestamp", ">=", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)), // Últimos 30 días
+      orderBy("timestamp", "desc"),
+      limit(500)
+    )
   }, [db, targetBusinessId])
 
   const deliveriesRef = useMemoFirebase(() => {
     if (!db || !targetBusinessId) return null
-    return query(collection(db, "deliveries"), where("venueId", "==", targetBusinessId))
+    return query(
+      collection(db, "deliveries"), 
+      where("venueId", "==", targetBusinessId),
+      where("createdAt", ">=", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+      orderBy("createdAt", "desc"),
+      limit(300)
+    )
   }, [db, targetBusinessId])
 
   const expensesRef = useMemoFirebase(() => {
     if (!db || !targetBusinessId) return null
-    return query(collection(db, "expenses"), where("businessId", "==", targetBusinessId))
+    return query(
+      collection(db, "expenses"), 
+      where("businessId", "==", targetBusinessId),
+      where("timestamp", ">=", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+      orderBy("timestamp", "desc"),
+      limit(200)
+    )
   }, [db, targetBusinessId])
 
   const fiscalReportsRef = useMemoFirebase(() => {
