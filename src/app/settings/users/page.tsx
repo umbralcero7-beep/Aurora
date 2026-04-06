@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { isSuperUser } from '@/lib/constants';
-import { collection, doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { useLanguage } from '@/context/language-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,8 @@ import {
   RefreshCw,
   Store,
   Pencil,
-  Info
+  Info,
+  Key
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -61,7 +62,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from '@/firebase/errors';
 
 export default function UserManagementPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const db = useFirestore();
   const { user: currentUser } = useUser();
   const { toast } = useToast();
@@ -69,6 +70,12 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [editingEmail, setEditingEmail] = useState<string | null>(null);
+  
+  // Password reset dialog
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordResetEmail, setPasswordResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const [emailInput, setEmailInput] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -199,6 +206,39 @@ export default function UserManagementPage() {
     } finally {
       setValidating(false);
     }
+  };
+
+  const handleResetPassword = async () => {
+    if (!db || !passwordResetEmail || !newPassword) return;
+    if (!isSuper) {
+      toast({ variant: "destructive", title: "Acceso Denegado", description: "Solo el superusuario puede cambiar contraseñas." });
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await updateDoc(doc(db, 'users', passwordResetEmail.toLowerCase()), {
+        passwordHash: newPassword,
+        passwordUpdatedAt: serverTimestamp(),
+        passwordUpdatedBy: currentUser?.email
+      });
+      toast({
+        title: language === 'es' ? "Contraseña Actualizada" : "Password Updated",
+        description: language === 'es' ? `La contraseña de ${passwordResetEmail} ha sido actualizada.` : `Password for ${passwordResetEmail} has been updated.`,
+      });
+      setShowPasswordDialog(false);
+      setPasswordResetEmail('');
+      setNewPassword('');
+    } catch (error) {
+      console.error(error);
+      toast({ variant: "destructive", title: "Error", description: "No se pudo actualizar la contraseña." });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const openPasswordReset = (email: string) => {
+    setPasswordResetEmail(email);
+    setShowPasswordDialog(true);
   };
 
   const resetForm = () => {
@@ -373,6 +413,11 @@ export default function UserManagementPage() {
                   </TableCell>
                   <TableCell className="text-right px-10">
                     <div className="flex justify-end gap-2">
+                      {isSuper && (
+                        <Button variant="ghost" size="icon" onClick={() => openPasswordReset(u.email)} className="h-10 w-10 rounded-xl hover:bg-amber-50 hover:text-amber-500 text-slate-200" title={language === 'es' ? 'Cambiar contraseña' : 'Change password'}>
+                          <Key className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(u)} className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary text-slate-200"><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDeleteUser(u.email)} className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:text-destructive text-slate-200"><Trash2 className="h-4 w-4" /></Button>
                     </div>
@@ -383,6 +428,48 @@ export default function UserManagementPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Password Reset Dialog - Only for Super User */}
+      {isSuper && (
+        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+          <DialogContent className="max-w-sm rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+            <DialogHeader className="p-8 bg-slate-900 text-white">
+              <DialogTitle className="text-lg font-black uppercase flex items-center gap-3">
+                <Key className="h-5 w-5" />
+                {language === 'es' ? 'Restablecer Contraseña' : 'Reset Password'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="p-8 space-y-6">
+              <p className="text-sm text-slate-500 text-center">
+                {language === 'es' 
+                  ? `Restablecer contraseña para: ${passwordResetEmail}`
+                  : `Reset password for: ${passwordResetEmail}`}
+              </p>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
+                  {language === 'es' ? 'Nueva Contraseña' : 'New Password'}
+                </Label>
+                <Input 
+                  type="password"
+                  className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter className="p-8 pt-0">
+              <Button 
+                className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black text-[10px] uppercase" 
+                onClick={handleResetPassword}
+                disabled={resetLoading || !newPassword}
+              >
+                {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (language === 'es' ? 'Actualizar Contraseña' : 'Update Password')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

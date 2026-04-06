@@ -107,33 +107,54 @@ export default function FiscalControlPage() {
   const { data: profile } = useDoc(userProfileRef);
 
   const isSuper = isSuperUser(user?.email);
-  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
+  const effectiveBusinessId = isSuper ? null : (profile?.businessId || (isSuper ? 'matu' : null));
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
 
+  // Super user: show all venues selector
+  const [selectedVenue, setSelectedVenue] = useState<string>('');
+  
+  // For super user, allow all businessIds
+  const venuesRef = useMemoFirebase(() => {
+    if (!db || !isSuper) return null;
+    return query(collection(db, "businesses"));
+  }, [db, isSuper]);
+  
+  const { data: allVenues } = useCollection(venuesRef);
+
+  const targetBusinessId = isSuper && selectedVenue ? selectedVenue : effectiveBusinessId;
+
   const invoicesRef = useMemoFirebase(() => {
-    if (!db || !effectiveBusinessId) return null
-    return query(collection(db, "invoices"), where("businessId", "==", effectiveBusinessId))
-  }, [db, effectiveBusinessId])
+    if (!db || !targetBusinessId) return null
+    return query(collection(db, "invoices"), where("businessId", "==", targetBusinessId))
+  }, [db, targetBusinessId])
 
   const deliveriesRef = useMemoFirebase(() => {
-    if (!db || !effectiveBusinessId) return null
-    return query(collection(db, "deliveries"), where("venueId", "==", effectiveBusinessId))
-  }, [db, effectiveBusinessId])
+    if (!db || !targetBusinessId) return null
+    return query(collection(db, "deliveries"), where("venueId", "==", targetBusinessId))
+  }, [db, targetBusinessId])
 
   const expensesRef = useMemoFirebase(() => {
-    if (!db || !effectiveBusinessId) return null
-    return query(collection(db, "expenses"), where("businessId", "==", effectiveBusinessId))
-  }, [db, effectiveBusinessId])
+    if (!db || !targetBusinessId) return null
+    return query(collection(db, "expenses"), where("businessId", "==", targetBusinessId))
+  }, [db, targetBusinessId])
 
   const fiscalReportsRef = useMemoFirebase(() => {
-    if (!db || !effectiveBusinessId) return null
+    if (!db) return null
+    if (isSuper) {
+      return query(
+        collection(db, "fiscal_reports"), 
+        orderBy("timestamp", "desc"),
+        limit(50)
+      )
+    }
+    if (!targetBusinessId) return null
     return query(
       collection(db, "fiscal_reports"), 
-      where("businessId", "==", effectiveBusinessId),
+      where("businessId", "==", targetBusinessId),
       orderBy("timestamp", "desc"),
       limit(50)
     )
-  }, [db, effectiveBusinessId])
+  }, [db, targetBusinessId, isSuper])
 
   const { data: allInvoices, isLoading: invoicesLoading } = useCollection(invoicesRef)
   const { data: allDeliveries, isLoading: deliveriesLoading } = useCollection(deliveriesRef)
@@ -441,17 +462,31 @@ export default function FiscalControlPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-4">
             <FileText className="h-8 w-8 text-primary" />
-            Control Fiscal • {effectiveVenueName}
+            Control Fiscal • {isSuper && selectedVenue ? (allVenues?.find(v => v.id === selectedVenue)?.name || 'Todas las Sedes') : effectiveVenueName}
           </h1>
           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">Protocolo de Cierre Maestro Auditado.</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="rounded-xl h-12 border-primary text-primary font-black text-[9px] uppercase tracking-widest px-6" onClick={() => generateReport('X')}>
-            <Zap className="mr-2 h-4 w-4" /> Reporte Parcial (X)
-          </Button>
-          <Button className="bg-primary hover:bg-primary/90 rounded-xl h-12 font-black text-[9px] uppercase tracking-widest px-8 shadow-xl shadow-primary/20" onClick={() => generateReport('Z')}>
-            <ShieldCheck className="mr-2 h-4 w-4" /> Cerrar Jornada (Z)
-          </Button>
+        <div className="flex flex-col gap-3">
+          {isSuper && allVenues && allVenues.length > 0 && (
+            <select 
+              className="h-10 rounded-xl bg-slate-50 border-none px-4 font-bold text-xs uppercase"
+              value={selectedVenue}
+              onChange={(e) => setSelectedVenue(e.target.value)}
+            >
+              <option value="">{language === 'es' ? 'Todas las Sedes' : 'All Venues'}</option>
+              {allVenues.map(v => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          )}
+          <div className="flex gap-3">
+            <Button variant="outline" className="rounded-xl h-12 border-primary text-primary font-black text-[9px] uppercase tracking-widest px-6" onClick={() => generateReport('X')}>
+              <Zap className="mr-2 h-4 w-4" /> Reporte Parcial (X)
+            </Button>
+            <Button className="bg-primary hover:bg-primary/90 rounded-xl h-12 font-black text-[9px] uppercase tracking-widest px-8 shadow-xl shadow-primary/20" onClick={() => generateReport('Z')}>
+              <ShieldCheck className="mr-2 h-4 w-4" /> Cerrar Jornada (Z)
+            </Button>
+          </div>
         </div>
       </div>
 

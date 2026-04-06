@@ -41,6 +41,26 @@ service cloud.firestore {
                     (isSuperUser() || getProfile().role in ['ADMIN', 'CASHIER', 'SUPPORT']);
     }
 
+    // Reglas para Domicilios
+    match /deliveries/{deliveryId} {
+      allow read: if request.auth != null && belongsToBusiness(resource.data);
+      allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
+                    (isSuperUser() || getProfile().role in ['ADMIN', 'RECEPTIONIST', 'SUPPORT']);
+    }
+
+    // Reglas para Sedes/Venues (Solo super usuario puede crear/modificar)
+    match /venues/{venueId} {
+      allow read: if request.auth != null && (isSuperUser() || getProfile().role == 'SUPPORT');
+      allow write: if request.auth != null && isSuperUser();
+    }
+
+    // Reglas para Reportes Fiscales
+    match /fiscal_reports/{reportId} {
+      allow read: if request.auth != null && belongsToBusiness(resource.data);
+      allow write: if request.auth != null && belongsToBusiness(request.resource.data) && 
+                    (isSuperUser() || getProfile().role in ['ADMIN', 'CASHIER', 'SUPPORT']);
+    }
+
     // Reglas para el Menú
     match /menu/{productId} {
       allow read: if request.auth != null && belongsToBusiness(resource.data);
