@@ -17,18 +17,16 @@ const nextConfig: NextConfig = {
   async headers() {
     const cspHeader = `
       default-src 'self';
-      script-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline';
       style-src 'self' 'unsafe-inline';
-      img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos;
-      font-src 'self';
+      img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos https://*.googleusercontent.com;
+      font-src 'self' data:;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
-      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com;
+      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://generativelanguage.googleapis.com;
       upgrade-insecure-requests;
-      frame-ancestors 'none';
-      sandbox allow-same-origin allow-scripts;
     `.replace(/\s{2,}/g, ' ').trim();
 
     return [
