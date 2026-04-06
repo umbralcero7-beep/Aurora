@@ -63,6 +63,15 @@ export default function Dashboard() {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [isSimulatedOffline, setIsSimulatedOffline] = useState(false);
+
+  // Toggle offline mode
+  const toggleOfflineMode = (enabled: boolean) => {
+    setIsSimulatedOffline(enabled);
+    // Dispatch event to notify client-layout and all components
+    window.dispatchEvent(new CustomEvent('aurora:toggle-offline', { 
+      detail: { offline: enabled } 
+    }));
+  };
   
   // Hydration safety for fiscal session
   const [sessionStartIso, setSessionStartIso] = useState<string>("");
@@ -219,7 +228,7 @@ export default function Dashboard() {
                 {isSimulatedOffline ? <WifiOff className="h-4 w-4 text-orange-500 animate-pulse" /> : <Wifi className="h-4 w-4 text-emerald-500" />}
                 <Label htmlFor="offline-mode" className="text-[9px] font-black text-white uppercase cursor-pointer">Modo Offline</Label>
               </div>
-              <Switch id="offline-mode" checked={isSimulatedOffline} onCheckedChange={(c) => setIsSimulatedOffline(c)} className="data-[state=checked]:bg-orange-500" />
+              <Switch id="offline-mode" checked={isSimulatedOffline} onCheckedChange={toggleOfflineMode} className="data-[state=checked]:bg-orange-500" />
             </div>
           </div>
         </div>
