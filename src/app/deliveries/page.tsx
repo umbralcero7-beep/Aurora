@@ -440,19 +440,19 @@ export default function DeliveriesPage() {
   if (!mounted) return null;
 
   return (
-    <div className="p-6 md:p-10 space-y-8 bg-white min-h-full max-w-[1400px] mx-auto font-body">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-4 md:p-6 lg:p-10 space-y-6 md:space-y-8 bg-white min-h-full max-w-[1400px] mx-auto font-body">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-4">
-            <Truck className="h-8 w-8 text-primary" />
+          <h1 className="text-xl md:text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-3 md:gap-4">
+            <Truck className="h-6 md:h-8 w-6 md:w-8 text-primary" />
             {t.deliveries.title} • {effectiveVenueName}
           </h1>
-          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">Gestión de Domicilios y Control de Despacho.</p>
+          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic hidden md:block">Gestión de Domicilios y Control de Despacho.</p>
         </div>
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <Button 
             variant={viewMode === 'cancelled' ? "secondary" : "outline"}
-            className={cn("rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest", 
+            className={cn("rounded-xl h-11 md:h-12 px-4 md:px-6 font-black text-[10px] uppercase tracking-widest", 
               viewMode === 'cancelled' && "bg-slate-900 text-white hover:bg-slate-800"
             )}
             onClick={() => setViewMode(viewMode === 'active' ? 'cancelled' : 'active')}
@@ -462,16 +462,16 @@ export default function DeliveriesPage() {
           </Button>
           <Dialog open={isRegisterOpen} onOpenChange={setIsRegisterOpen}>
             <DialogTrigger asChild>
-              <Button className="flex-1 md:flex-none bg-primary hover:bg-primary/90 rounded-xl h-12 px-8 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20">
+              <Button className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 rounded-xl h-11 md:h-12 px-6 md:px-8 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20">
                 <Plus className="mr-2 h-5 w-5" /> {t.deliveries.register}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl rounded-[2rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
-              <div className="flex flex-col md:flex-row h-auto md:h-[600px]">
-                <div className="flex-1 p-6 md:p-10 space-y-6 border-r border-slate-50 overflow-y-auto">
+            <DialogContent className="max-w-[95vw] md:max-w-2xl rounded-[2rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+              <div className="flex flex-col md:flex-row h-auto md:h-[600px] max-h-[85vh] md:max-h-none">
+                <div className="flex-1 p-4 md:p-10 space-y-4 md:space-y-6 border-r border-slate-50 overflow-y-auto">
                   <DialogHeader>
                     <div className="flex items-center justify-between">
-                      <DialogTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                      <DialogTitle className="text-lg md:text-xl font-black uppercase tracking-tighter flex items-center gap-2">
                         <Hash className="h-5 w-5 text-primary" />
                         Comanda #{todayCount + 1}
                       </DialogTitle>
@@ -479,7 +479,7 @@ export default function DeliveriesPage() {
                     </div>
                   </DialogHeader>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                       <div className="space-y-1">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Teléfono</Label>
                         <div className="relative">
@@ -530,8 +530,8 @@ export default function DeliveriesPage() {
                   </div>
                 </div>
                 
-                <div className="w-full md:w-[320px] bg-slate-50/50 flex flex-col border-t md:border-t-0">
-                  <div className="p-6 md:p-8 pb-4 space-y-4">
+                <div className="w-full md:w-[320px] bg-slate-50/50 flex flex-col border-t md:border-t-0 max-h-[40vh] md:max-h-none">
+                  <div className="p-4 md:p-8 pb-4 space-y-4">
                     <h4 className="text-[10px] font-black uppercase text-primary flex items-center gap-2"><UtensilsCrossed className="h-3 w-3" /> Añadir Platos</h4>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
@@ -542,7 +542,7 @@ export default function DeliveriesPage() {
                         onChange={(e) => setMenuSearch(e.target.value)}
                       />
                       {filteredMenuItems.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 z-50">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 max-h-48 overflow-y-auto">
                           {filteredMenuItems.map(item => (
                             <button key={item.id} className="w-full text-left px-4 py-3 hover:bg-slate-50 flex justify-between items-center border-b last:border-none" onClick={() => addItem(item)}>
                               <div className="text-[10px] font-black uppercase">{item.name}</div>
@@ -553,7 +553,7 @@ export default function DeliveriesPage() {
                       )}
                     </div>
                   </div>
-                  <ScrollArea className="flex-1 px-6 md:px-8">
+                  <ScrollArea className="flex-1 px-4 md:px-8">
                     <div className="space-y-4 py-4">
                       {selectedItems.map(item => (
                         <div key={item.id} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-2">
@@ -573,13 +573,13 @@ export default function DeliveriesPage() {
                       ))}
                     </div>
                   </ScrollArea>
-                  <div className="p-6 md:p-8 bg-white border-t border-slate-100 space-y-4">
+                  <div className="p-4 md:p-8 bg-white border-t border-slate-100 space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-[9px] font-black uppercase text-slate-400">Total</span>
                       <span className="text-xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(total)}</span>
                     </div>
                     <Button 
-                      className="w-full bg-primary hover:bg-primary/90 h-14 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg" 
+                      className="w-full bg-primary hover:bg-primary/90 h-12 md:h-14 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg" 
                       onClick={handleRegister} 
                       disabled={isFinishing || selectedItems.length === 0}
                     >
@@ -594,86 +594,86 @@ export default function DeliveriesPage() {
       </div>
 
       <div className="relative">
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+        <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 h-4 md:h-5 w-4 md:w-5 text-slate-400" />
         <Input 
           placeholder="Buscar domicilio..."
-          className="pl-16 h-16 rounded-[1.8rem] bg-slate-50 border-none text-sm font-bold placeholder:text-slate-300"
+          className="pl-12 md:pl-16 h-12 md:h-16 rounded-[1.5rem] md:rounded-[1.8rem] bg-slate-50 border-none text-sm font-bold placeholder:text-slate-300"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-40 gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <div className="flex flex-col items-center justify-center py-20 md:py-40 gap-4">
+          <Loader2 className="h-8 md:h-10 w-8 md:h-10 animate-spin text-primary" />
           <p className="font-black text-primary uppercase text-[10px] tracking-widest">Consultando Flujo...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 pb-24 md:pb-32">
           {filteredDeliveries.map((delivery) => (
             <Card key={delivery.id} className={cn(
-              "rounded-[2rem] border-slate-100 shadow-xl overflow-hidden flex flex-col bg-white",
+              "rounded-[1.5rem] md:rounded-[2rem] border-slate-100 shadow-xl overflow-hidden flex flex-col bg-white",
               delivery.status === 'Anulado' && "opacity-70 grayscale-[0.5]"
             )}>
-              <CardHeader className="bg-slate-50/50 p-8 border-b border-slate-100">
-                <div className="flex justify-between items-start mb-4">
-                  <Badge className={cn("font-black text-[10px] px-4 py-1.5 rounded-full uppercase tracking-widest border-none shadow-sm", 
+              <CardHeader className="bg-slate-50/50 p-6 md:p-8 border-b border-slate-100">
+                <div className="flex justify-between items-start mb-3 md:mb-4">
+                  <Badge className={cn("font-black text-[9px] md:text-[10px] px-3 md:px-4 py-1 md:py-1.5 rounded-full uppercase tracking-widest border-none shadow-sm", 
                     delivery.status === 'Pendiente' ? "bg-orange-500 text-white" : 
                     delivery.status === 'En Camino' ? "bg-primary text-white" : 
                     delivery.status === 'Anulado' ? "bg-slate-900 text-white" : "bg-emerald-500 text-white"
                   )}>
                     #DOM-{delivery.orderNumber} • {delivery.status}
                   </Badge>
-                  <span className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-2">
+                  <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase flex items-center gap-1 md:gap-2">
                     <Clock className="h-3 w-3" />
                     {delivery.createdAt ? formatDistanceToNow(new Date(delivery.createdAt), { locale: dateLocale }) : "---"}
                   </span>
                 </div>
-                <CardTitle className="text-lg font-black uppercase tracking-tight text-slate-900 line-clamp-1">{delivery.customerName}</CardTitle>
-                <CardDescription className="text-xs font-bold text-slate-400 flex items-center gap-2 mt-2">
+                <CardTitle className="text-base md:text-lg font-black uppercase tracking-tight text-slate-900 line-clamp-1">{delivery.customerName}</CardTitle>
+                <CardDescription className="text-xs font-bold text-slate-400 flex items-center gap-2 mt-1 md:mt-2">
                   <Phone className="h-3 w-3 text-primary" /> {delivery.phone}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-8 flex-1 space-y-6">
-                <div className="space-y-2">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Dirección de Entrega</p>
-                  <p className="text-sm font-bold text-slate-700 leading-relaxed uppercase italic">"{delivery.address}"</p>
+              <CardContent className="p-6 md:p-8 flex-1 space-y-4 md:space-y-6">
+                <div className="space-y-1 md:space-y-2">
+                  <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">Dirección de Entrega</p>
+                  <p className="text-xs md:text-sm font-bold text-slate-700 leading-relaxed uppercase italic">"{delivery.address}"</p>
                 </div>
                 
                 {delivery.status === 'Anulado' && (
-                  <div className="p-4 bg-destructive/5 rounded-xl border border-destructive/10 space-y-2">
-                    <p className="text-[8px] font-black text-destructive uppercase tracking-widest flex items-center gap-2"><AlertTriangle className="h-2.5 w-2.5" /> Motivo</p>
-                    <p className="text-[10px] font-bold text-slate-600 uppercase italic">"{delivery.cancellationReason || "Sin motivo"}"</p>
+                  <div className="p-3 md:p-4 bg-destructive/5 rounded-xl border border-destructive/10 space-y-1 md:space-y-2">
+                    <p className="text-[7px] md:text-[8px] font-black text-destructive uppercase tracking-widest flex items-center gap-1 md:gap-2"><AlertTriangle className="h-2.5 w-2.5" /> Motivo</p>
+                    <p className="text-[9px] md:text-[10px] font-bold text-slate-600 uppercase italic">"{delivery.cancellationReason || "Sin motivo"}"</p>
                   </div>
                 )}
 
-                <div className="flex justify-between items-end border-t border-slate-50 pt-6">
+                <div className="flex justify-between items-end border-t border-slate-50 pt-4 md:pt-6">
                   <div className="space-y-1">
                     {delivery.shippingCost > 0 && (
-                      <p className="text-[8px] font-bold text-slate-400 uppercase">Envío: {formatCurrencyDetailed(delivery.shippingCost)}</p>
+                      <p className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase">Envío: {formatCurrencyDetailed(delivery.shippingCost)}</p>
                     )}
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</p>
-                    <p className="text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(delivery.total)}</p>
+                    <p className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</p>
+                    <p className="text-xl md:text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(delivery.total)}</p>
                   </div>
-                  <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 text-slate-200" onClick={() => handlePrint(delivery)}>
-                    <Printer className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="rounded-xl h-9 md:h-10 w-9 md:w-10 text-slate-200" onClick={() => handlePrint(delivery)}>
+                    <Printer className="h-4 md:h-5 w-4 md:w-5" />
                   </Button>
                 </div>
               </CardContent>
-              <CardFooter className="p-8 pt-0 bg-white">
-                <div className="grid grid-cols-2 gap-3 w-full">
+              <CardFooter className="p-6 md:p-8 pt-0 bg-white">
+                <div className="grid grid-cols-2 gap-2 md:gap-3 w-full">
                   {delivery.status === 'Pendiente' && (
                     <>
-                      <Button className="w-full bg-primary h-11 rounded-xl font-black text-[9px] uppercase tracking-widest" onClick={() => updateStatus(delivery.id, "En Camino")}>En Camino</Button>
-                      <Button variant="outline" className="w-full border-destructive text-destructive h-11 rounded-xl font-black text-[9px] uppercase tracking-widest" onClick={() => { setCancellingDelivery(delivery); setIsCancelDialogOpen(true); }}>Anular</Button>
+                      <Button className="w-full bg-primary h-10 md:h-11 rounded-xl font-black text-[8px] md:text-[9px] uppercase tracking-widest" onClick={() => updateStatus(delivery.id, "En Camino")}>En Camino</Button>
+                      <Button variant="outline" className="w-full border-destructive text-destructive h-10 md:h-11 rounded-xl font-black text-[8px] md:text-[9px] uppercase tracking-widest" onClick={() => { setCancellingDelivery(delivery); setIsCancelDialogOpen(true); }}>Anular</Button>
                     </>
                   )}
                   {delivery.status === 'En Camino' && (
-                    <Button className="col-span-2 w-full bg-emerald-500 h-11 rounded-xl font-black text-[9px] uppercase tracking-widest" onClick={() => updateStatus(delivery.id, "Entregado")}>Entregado</Button>
+                    <Button className="col-span-2 w-full bg-emerald-500 h-10 md:h-11 rounded-xl font-black text-[8px] md:text-[9px] uppercase tracking-widest" onClick={() => updateStatus(delivery.id, "Entregado")}>Entregado</Button>
                   )}
                   {delivery.status !== 'Entregado' && delivery.status !== 'Anulado' && (
-                    <Button variant="outline" className="col-span-2 w-full border-slate-100 h-11 rounded-xl font-black text-[9px] uppercase tracking-widest" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(delivery.address)}`, '_blank')}>
-                      <Navigation className="h-3 w-3 mr-2" /> Ver Ruta
+                    <Button variant="outline" className="col-span-2 w-full border-slate-100 h-10 md:h-11 rounded-xl font-black text-[8px] md:text-[9px] uppercase tracking-widest" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(delivery.address)}`, '_blank')}>
+                      <Navigation className="h-3 w-3 mr-1 md:mr-2" /> Ver Ruta
                     </Button>
                   )}
                 </div>
@@ -684,22 +684,22 @@ export default function DeliveriesPage() {
       )}
 
       <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
-        <DialogContent className="max-w-md rounded-[2.5rem] p-10 bg-white">
-          <DialogHeader className="space-y-4">
-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-slate-900">Protocolo de Anulación</DialogTitle>
+        <DialogContent className="max-w-[90vw] md:max-w-md rounded-[2rem] p-6 md:p-10 bg-white">
+          <DialogHeader className="space-y-3 md:space-y-4">
+            <DialogTitle className="text-lg md:text-2xl font-black uppercase tracking-tighter text-slate-900">Protocolo de Anulación</DialogTitle>
           </DialogHeader>
-          <div className="py-8 space-y-6">
+          <div className="py-4 md:py-8 space-y-4 md:space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Confirmar # de Domicilio</Label>
-              <Input placeholder={`Escribe ${cancellingDelivery?.orderNumber} para confirmar`} value={confirmOrderNum} onChange={(e) => setConfirmOrderNum(e.target.value)} className="h-14 rounded-2xl bg-slate-50 border-none font-black text-sm uppercase" />
+              <Label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">Confirmar # de Domicilio</Label>
+              <Input placeholder={`Escribe ${cancellingDelivery?.orderNumber} para confirmar`} value={confirmOrderNum} onChange={(e) => setConfirmOrderNum(e.target.value)} className="h-12 md:h-14 rounded-2xl bg-slate-50 border-none font-black text-sm uppercase" />
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Motivo</Label>
-              <Textarea placeholder="Motivo de la baja..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className="h-32 rounded-2xl bg-slate-50 border-none font-bold text-xs uppercase" />
+              <Label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">Motivo</Label>
+              <Textarea placeholder="Motivo de la baja..." value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className="h-24 md:h-32 rounded-2xl bg-slate-50 border-none font-bold text-xs uppercase" />
             </div>
           </div>
           <DialogFooter>
-            <Button className="w-full h-16 bg-destructive hover:bg-destructive/90 text-white rounded-2xl font-black text-[10px] uppercase" onClick={confirmCancellation} disabled={!cancelReason.trim() || confirmOrderNum !== cancellingDelivery?.orderNumber.toString()}>
+            <Button className="w-full h-12 md:h-16 bg-destructive hover:bg-destructive/90 text-white rounded-2xl font-black text-[9px] md:text-[10px] uppercase" onClick={confirmCancellation} disabled={!cancelReason.trim() || confirmOrderNum !== cancellingDelivery?.orderNumber.toString()}>
               Ejecutar Anulación
             </Button>
           </DialogFooter>
@@ -708,21 +708,21 @@ export default function DeliveriesPage() {
 
       {/* Password Dialog for Printing */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="max-w-sm rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-slate-900 text-white">
-            <DialogTitle className="text-lg font-black uppercase flex items-center gap-3">
-              <Printer className="h-5 w-5" />
+        <DialogContent className="max-w-[90vw] md:max-w-sm rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+          <DialogHeader className="p-6 md:p-8 bg-slate-900 text-white">
+            <DialogTitle className="text-base md:text-lg font-black uppercase flex items-center gap-2 md:gap-3">
+              <Printer className="h-4 md:h-5 w-4 md:w-5" />
               {language === 'es' ? 'Impresión Restringida' : 'Restricted Printing'}
             </DialogTitle>
           </DialogHeader>
-          <div className="p-8 space-y-6">
-            <p className="text-sm text-slate-500 text-center">
+          <div className="p-6 md:p-8 space-y-4 md:space-y-6">
+            <p className="text-xs md:text-sm text-slate-500 text-center">
               {language === 'es' 
                 ? 'Ingresa tu contraseña de ADMIN para imprimir este domicilio.'
                 : 'Enter your ADMIN password to print this delivery.'}
             </p>
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
+              <Label className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
                 {language === 'es' ? 'Contraseña' : 'Password'}
               </Label>
               <Input 
@@ -738,9 +738,9 @@ export default function DeliveriesPage() {
               )}
             </div>
           </div>
-          <DialogFooter className="p-8 pt-0">
+          <DialogFooter className="p-6 md:p-8 pt-0">
             <Button 
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black text-[10px] uppercase" 
+              className="w-full h-12 md:h-14 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black text-[9px] md:text-[10px] uppercase" 
               onClick={handlePasswordVerify}
               disabled={isVerifyingPassword || !adminPassword}
             >

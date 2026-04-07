@@ -158,42 +158,42 @@ export default function InvoicesPage() {
   const totalMonthly = invoices?.reduce((acc, inv) => acc + Number(inv.total || 0), 0) || 0
 
   return (
-    <div className="p-6 md:p-10 space-y-10 bg-white min-h-full font-body max-w-[1600px] mx-auto">
+    <div className="p-4 md:p-6 lg:p-10 space-y-6 md:space-y-10 bg-white min-h-full font-body max-w-[1600px] mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-4">
-            <Receipt className="h-8 w-8 text-primary" />
+          <h1 className="text-xl md:text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-3 md:gap-4">
+            <Receipt className="h-6 md:h-8 w-6 md:w-8 text-primary" />
             {t.nav.invoices}
           </h1>
-          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic hidden md:block">
             {isSupport ? 'Soberanía Global: Histórico de todas las sedes.' : 'Registro histórico de transacciones auditadas.'}
           </p>
         </div>
-        <div className="flex gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full md:w-auto">
           <Button 
             variant="outline" 
-            className="flex-1 md:flex-none rounded-xl h-12 border-slate-200 font-black text-[10px] uppercase tracking-widest px-8 shadow-sm"
+            className="flex-1 sm:flex-none rounded-xl h-10 md:h-12 border-slate-200 font-black text-[9px] md:text-[10px] uppercase tracking-widest px-4 md:px-8 shadow-sm"
             onClick={handleExportExcel}
           >
-            <Download className="mr-2 h-4 w-4 text-emerald-500" /> Exportar Auditoría
+            <Download className="mr-1 md:mr-2 h-3 md:h-4 w-3 md:w-4 text-emerald-500" /> <span className="hidden sm:inline">Exportar Auditoría</span>
           </Button>
-          <Button className="flex-1 md:flex-none bg-primary hover:bg-primary/90 rounded-xl h-12 font-black text-[10px] uppercase tracking-widest px-8 shadow-xl shadow-primary/20">
-            <Printer className="mr-2 h-4 w-4" /> Imprimir Cierre
+          <Button className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 rounded-xl h-10 md:h-12 font-black text-[9px] md:text-[10px] uppercase tracking-widest px-4 md:px-8 shadow-xl shadow-primary/20">
+            <Printer className="mr-1 md:mr-2 h-3 md:h-4 w-3 md:w-4" /> <span className="hidden sm:inline">Imprimir Cierre</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2rem] p-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Facturado ({isSupport ? 'Global' : 'Ciclo'})</CardTitle>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2">
+          <CardHeader className="pb-1 md:pb-2">
+            <CardTitle className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Facturado ({isSupport ? 'Global' : 'Ciclo'})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-primary tracking-tighter">
+            <div className="text-2xl md:text-4xl font-black text-primary tracking-tighter">
               {formatCurrencyDetailed(totalMonthly)}
             </div>
-            <p className="text-[9px] mt-2 text-muted-foreground font-black uppercase tracking-tight flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Auditoría V3.0 Activa
+            <p className="text-[8px] md:text-[9px] mt-1 md:mt-2 text-muted-foreground font-black uppercase tracking-tight flex items-center gap-1">
+              <CheckCircle2 className="h-2.5 md:h-3 w-2.5 md:h-3 text-emerald-500" /> Auditoría V3.0 Activa
             </p>
           </CardContent>
         </Card>

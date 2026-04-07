@@ -14,8 +14,17 @@ import {
   Bell,
   Utensils,
   Users,
-  Hash
+  Hash,
+  Plus,
+  Minus,
+  X
 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -33,7 +42,7 @@ import { collection, query, orderBy, limit, updateDoc, doc, where, setDoc } from
 import { useLanguage } from "@/context/language-context"
 import { formatDistanceToNow } from "date-fns"
 import { es, enUS } from "date-fns/locale"
-import { cn } from "@/lib/utils"
+import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
@@ -45,6 +54,11 @@ export default function OrdersPage() {
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false)
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [newItemName, setNewItemName] = useState("")
+  const [newItemPrice, setNewItemPrice] = useState("")
+  const [newItemQuantity, setNewItemQuantity] = useState(1)
 
   useEffect(() => {
     setMounted(true)
@@ -178,48 +192,100 @@ export default function OrdersPage() {
     }
   }
 
+  const openAddProductModal = (order: any) => {
+    setSelectedOrder(order)
+    setNewItemName("")
+    setNewItemPrice("")
+    setNewItemQuantity(1)
+    setIsAddProductOpen(true)
+  }
+
+  const handleAddProduct = () => {
+    if (!db || !selectedOrder || !newItemName.trim() || !newItemPrice) return
+
+    const price = parseInt(newItemPrice)
+    if (isNaN(price) || price <= 0) {
+      toast({ variant: "destructive", title: "Precio inválido", description: "Ingrese un precio válido." })
+      return
+    }
+
+    const currentItems = selectedOrder.items || []
+    const existingItem = currentItems.find((i: any) => i.name?.toLowerCase() === newItemName.trim().toLowerCase())
+
+    let newItems: any[]
+    let newTotal: number
+
+    if (existingItem) {
+      newItems = currentItems.map((i: any) => 
+        i.name?.toLowerCase() === newItemName.trim().toLowerCase()
+          ? { ...i, quantity: i.quantity + newItemQuantity }
+          : i
+      )
+      toast({ title: "Producto actualizado", description: `Se aumentó cantidad de ${newItemName}` })
+    } else {
+      newItems = [...currentItems, { id: `add_${Date.now()}`, name: newItemName.trim(), price, quantity: newItemQuantity }]
+      toast({ title: "Producto agregado", description: `${newItemName} x${newItemQuantity}` })
+    }
+
+    newTotal = newItems.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0)
+
+    updateDoc(doc(db, "orders", selectedOrder.id), { items: newItems, total: newTotal })
+      .then(() => {
+        setIsAddProductOpen(false)
+        setSelectedOrder(null)
+      })
+      .catch(async (err) => {
+        if (isOfflineError(err)) {
+          errorEmitter.emit('offline-error', new FirestoreOfflineError({ path: `orders/${selectedOrder.id}`, operation: 'update' }))
+        } else {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `orders/${selectedOrder.id}`, operation: 'update', requestResourceData: { items: newItems, total: newTotal } }))
+        }
+      })
+  }
+
   const dateLocale = language === 'es' ? es : enUS
 
   if (!mounted) return null;
 
   return (
-    <div className="p-6 md:p-10 space-y-10 bg-white min-h-full font-body max-w-[1600px] mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-4">
-            <ChefHat className="h-8 w-8 text-primary" />
-            Monitor de Cocina • {isSupport ? 'Soberanía Global' : effectiveVenueName}
-          </h1>
-          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">
-            Visualización de comandas en tiempo real por # de orden.
-          </p>
+    <>
+      <div className="p-4 md:p-6 lg:p-10 space-y-6 md:space-y-10 bg-white min-h-full font-body max-w-[1600px] mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-3 md:gap-4">
+              <ChefHat className="h-6 md:h-8 w-6 md:w-8 text-primary" />
+              Monitor de Cocina • {isSupport ? 'Soberanía Global' : effectiveVenueName}
+            </h1>
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic hidden md:block">
+              Visualización de comandas en tiempo real por # de orden.
+            </p>
+          </div>
+          <div className="bg-primary/10 px-4 md:px-6 py-2 md:py-3 rounded-[1rem] md:rounded-[1.2rem] border border-primary/20 flex items-center gap-2 md:gap-3">
+            {isSupport ? <ShieldCheck className="h-4 md:h-5 w-4 md:h-5 text-secondary" /> : <Utensils className="h-4 md:h-5 w-4 md:h-5 text-primary" />}
+            <span className="text-[8px] md:text-[9px] font-black text-primary uppercase tracking-[0.2em]">Producción Activa</span>
+          </div>
         </div>
-        <div className="bg-primary/10 px-6 py-3 rounded-[1.2rem] border border-primary/20 flex items-center gap-3">
-          {isSupport ? <ShieldCheck className="h-5 w-5 text-secondary" /> : <Utensils className="h-5 w-5 text-primary" />}
-          <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Producción Activa</span>
-        </div>
-      </div>
 
       <div className="relative max-w-md">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input 
           placeholder="Filtrar por comanda, mesa o mesero..." 
-          className="pl-12 h-14 rounded-[1.5rem] bg-slate-50 border-none text-xs font-bold"
+          className="pl-12 h-12 md:h-14 rounded-[1.3rem] md:rounded-[1.5rem] bg-slate-50 border-none text-xs font-bold"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-40 gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <div className="flex flex-col items-center justify-center py-20 md:py-40 gap-4">
+          <Loader2 className="h-8 md:h-10 w-8 md:h-10 animate-spin text-primary" />
           <p className="font-black text-primary uppercase text-[10px] tracking-widest">Sincronizando Comandas...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-32">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8 pb-24 md:pb-32">
           {filteredOrders.length === 0 ? (
-            <div className="col-span-full py-40 text-center border-4 border-dashed rounded-[2.5rem] bg-slate-50/50">
-              <UtensilsCrossed className="h-16 w-16 mx-auto mb-6 opacity-10 text-slate-400" />
+            <div className="col-span-full py-20 md:py-40 text-center border-4 border-dashed rounded-[2rem] md:rounded-[2.5rem] bg-slate-50/50">
+              <UtensilsCrossed className="h-12 md:h-16 w-12 md:h-16 mx-auto mb-4 md:mb-6 opacity-10 text-slate-400" />
               <p className="text-slate-300 font-black uppercase text-xs tracking-widest px-10">Sin órdenes pendientes en cocina</p>
             </div>
           ) : (
@@ -227,61 +293,71 @@ export default function OrdersPage() {
               const elapsedMin = order.createdAt ? Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 60000) : 0
               const isUrgent = elapsedMin > 20
               return (
-              <Card key={order.id} className={cn("rounded-[2rem] shadow-xl flex flex-col hover:shadow-2xl transition-all duration-500 overflow-hidden bg-white", isUrgent ? "border-2 border-red-300 animate-pulse" : "border-slate-100")}>
-                <CardHeader className={cn("pb-6 pt-8 px-8 border-b", isUrgent ? "bg-red-50 border-red-100" : "bg-slate-50/50 border-slate-100")}>
-                  <div className="flex justify-between items-start mb-4">
+              <Card key={order.id} className={cn("rounded-[1.5rem] md:rounded-[2rem] shadow-xl flex flex-col hover:shadow-2xl transition-all duration-500 overflow-hidden bg-white", isUrgent ? "border-2 border-red-300 animate-pulse" : "border-slate-100")}>
+                <CardHeader className={cn("pb-4 md:pb-6 pt-6 md:pt-8 px-6 md:px-8 border-b", isUrgent ? "bg-red-50 border-red-100" : "bg-slate-50/50 border-slate-100")}>
+                  <div className="flex justify-between items-start mb-3 md:mb-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <Badge className={cn("font-black text-[10px] rounded-lg px-2", isUrgent ? "bg-red-500 text-white" : "bg-primary text-white")}>#{order.orderNumber || '?'}</Badge>
-                        <CardTitle className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Mesa {order.tableNumber}</CardTitle>
+                        <Badge className={cn("font-black text-[9px] md:text-[10px] rounded-md md:rounded-lg px-1.5 md:px-2", isUrgent ? "bg-red-500 text-white" : "bg-primary text-white")}>#{order.orderNumber || '?'}</Badge>
+                        <CardTitle className="text-lg md:text-2xl font-black text-slate-900 uppercase tracking-tighter">Mesa {order.tableNumber}</CardTitle>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-400 tracking-widest">
-                          <User className="h-3 w-3 text-primary" />
+                      <div className="flex items-center gap-2 md:gap-4">
+                        <div className="flex items-center gap-1 text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest">
+                          <User className="h-2.5 md:h-3 w-2.5 md:h-3 text-primary" />
                           {order.waiterName || "Anónimo"}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-400 tracking-widest">
-                          <Users className="h-3 w-3 text-secondary" />
+                        <div className="flex items-center gap-1 text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest">
+                          <Users className="h-2.5 md:h-3 w-2.5 md:h-3 text-secondary" />
                           {order.guestCount || 1} Clientes
                         </div>
                       </div>
                     </div>
-                    <Badge className={cn("border-none rounded-full font-black text-[8px] uppercase px-3 py-1 shadow-sm", 
+                    <Badge className={cn("border-none rounded-full font-black text-[7px] md:text-[8px] uppercase px-2 md:px-3 py-0.5 md:py-1 shadow-sm", 
                       isUrgent ? "bg-red-500 text-white" : order.status === 'Open' ? "bg-orange-500 text-white" : "bg-blue-500 text-white"
                     )}>
                       {isUrgent ? `${elapsedMin} MIN` : order.status === 'Open' ? 'NUEVA' : 'EN PROCESO'}
                     </Badge>
                   </div>
-                  <div className={cn("text-[10px] font-black uppercase flex items-center gap-2", isUrgent ? "text-red-500" : "text-slate-400")}>
-                    <Clock className="h-3 w-3" />
+                  <div className={cn("text-[9px] md:text-[10px] font-black uppercase flex items-center gap-1 md:gap-2", isUrgent ? "text-red-500" : "text-slate-400")}>
+                    <Clock className="h-2.5 md:h-3 w-2.5 md:h-3" />
                     {order.createdAt ? formatDistanceToNow(new Date(order.createdAt), { locale: dateLocale, addSuffix: true }) : '---'}
-                    {isUrgent && <span className="text-[8px] text-red-600 font-black animate-pulse">URGENTE</span>}
+                    {isUrgent && <span className="text-[7px] md:text-[8px] text-red-600 font-black animate-pulse">URGENTE</span>}
                   </div>
                 </CardHeader>
-                <CardContent className="flex-1 pt-8 px-8">
-                  <ScrollArea className="h-48 pr-4">
-                    <ul className="space-y-4">
+                <CardContent className="flex-1 pt-6 md:pt-8 px-6 md:px-8">
+                  <ScrollArea className="h-36 md:h-48 pr-2 md:pr-4">
+                    <ul className="space-y-2 md:space-y-4">
                       {order.items?.map((item: any, idx: number) => (
-                        <li key={idx} className="flex items-center gap-3">
-                          <span className="h-6 w-6 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-white shrink-0">
+                        <li key={idx} className="flex items-center gap-2 md:gap-3">
+                          <span className="h-5 md:h-6 w-5 md:h-6 rounded-md md:rounded-lg bg-slate-900 flex items-center justify-center text-[9px] md:text-[10px] font-black text-white shrink-0">
                             {item.quantity}
                           </span>
-                          <span className="text-xs font-black text-slate-700 uppercase tracking-tight line-clamp-2">{item.name}</span>
+                          <span className="text-[10px] md:text-xs font-black text-slate-700 uppercase tracking-tight line-clamp-2">{item.name}</span>
                         </li>
                       ))}
                     </ul>
                   </ScrollArea>
                 </CardContent>
-                <CardFooter className="border-t border-slate-50 bg-slate-50/20 p-8">
-                  <Button 
-                    className={cn(
-                      "w-full h-12 rounded-xl font-black text-[9px] uppercase tracking-widest shadow-lg transition-all",
-                      order.status === 'Open' ? "bg-slate-900 hover:bg-slate-800" : "bg-emerald-600 hover:bg-emerald-700"
+                <CardFooter className="border-t border-slate-50 bg-slate-50/20 p-4 md:p-8">
+                  <div className="flex gap-2 md:gap-3 w-full">
+                    <Button 
+                      className={cn(
+                        "flex-1 h-10 md:h-12 rounded-lg md:rounded-xl font-black text-[8px] md:text-[9px] uppercase tracking-widest shadow-lg transition-all",
+                        order.status === 'Open' ? "bg-slate-900 hover:bg-slate-800" : "bg-emerald-600 hover:bg-emerald-700"
+                      )}
+                      onClick={() => updateOrderStatus(order)}
+                    >
+                      {order.status === 'Open' ? 'Comenzar Prep.' : 'Marcar Lista'}
+                    </Button>
+                    {order.status !== 'Closed' && (
+                      <Button 
+                        className="h-10 md:h-12 px-3 md:px-4 rounded-lg md:rounded-xl font-black text-[8px] md:text-[9px] uppercase tracking-widest shadow-lg bg-primary hover:bg-primary/90"
+                        onClick={() => openAddProductModal(order)}
+                      >
+                        <Plus className="h-3 md:h-4 w-3 md:w-4" />
+                      </Button>
                     )}
-                    onClick={() => updateOrderStatus(order)}
-                  >
-                    {order.status === 'Open' ? 'Comenzar Preparación' : 'Marcar como Lista'}
-                  </Button>
+                  </div>
                 </CardFooter>
               </Card>
             )})
@@ -289,5 +365,90 @@ export default function OrdersPage() {
         </div>
       )}
     </div>
+
+    <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+      <DialogContent className="max-w-[90vw] md:max-w-md rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 bg-white border-none shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-black uppercase text-base md:text-lg flex items-center gap-2">
+            <Plus className="h-5 w-5 text-primary" />
+            Agregar Producto
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-3 md:space-y-4 py-3 md:py-4">
+          <div className="space-y-1.5 md:space-y-2">
+            <label className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">Producto</label>
+            <Input 
+              placeholder="Nombre del producto" 
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              className="h-11 md:h-12 rounded-xl bg-slate-50 border-none font-bold text-xs md:text-sm"
+            />
+          </div>
+          
+          <div className="space-y-1.5 md:space-y-2">
+            <label className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">Precio</label>
+            <Input 
+              type="number"
+              placeholder="0" 
+              value={newItemPrice}
+              onChange={(e) => setNewItemPrice(e.target.value)}
+              className="h-11 md:h-12 rounded-xl bg-slate-50 border-none font-bold text-xs md:text-sm"
+            />
+          </div>
+          
+          <div className="space-y-1.5 md:space-y-2">
+            <label className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">Cantidad</label>
+            <div className="flex items-center gap-2 md:gap-3">
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="h-9 md:h-10 w-9 md:w-10 rounded-lg"
+                onClick={() => setNewItemQuantity(Math.max(1, newItemQuantity - 1))}
+              >
+                <Minus className="h-3 md:h-4 w-3 md:w-4" />
+              </Button>
+              <span className="w-10 md:w-12 text-center font-black text-base md:text-lg">{newItemQuantity}</span>
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="h-9 md:h-10 w-9 md:w-10 rounded-lg"
+                onClick={() => setNewItemQuantity(newItemQuantity + 1)}
+              >
+                <Plus className="h-3 md:h-4 w-3 md:w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {selectedOrder && (
+            <div className="bg-slate-50 p-3 md:p-4 rounded-xl space-y-1.5 md:space-y-2">
+              <p className="text-[9px] md:text-[10px] font-black uppercase text-slate-400">Resumen de Mesa {selectedOrder.tableNumber}</p>
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] md:text-xs font-black text-slate-500">Total actual:</span>
+                <span className="text-xs md:text-sm font-black text-primary">{formatCurrencyDetailed(selectedOrder.total || 0)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 md:gap-3 pt-1 md:pt-2">
+          <Button 
+            variant="outline"
+            className="flex-1 h-10 md:h-12 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] uppercase"
+            onClick={() => setIsAddProductOpen(false)}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            className="flex-1 h-10 md:h-12 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] uppercase bg-primary hover:bg-primary/90"
+            onClick={handleAddProduct}
+            disabled={!newItemName.trim() || !newItemPrice}
+          >
+            Agregar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }

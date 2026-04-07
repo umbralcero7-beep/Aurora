@@ -546,47 +546,47 @@ export default function POSPage() {
         "lg:col-span-8 flex flex-col h-full bg-slate-50/50 overflow-hidden relative",
         showCheckoutMobile ? "hidden lg:flex" : "flex"
       )}>
-        <div className="p-4 bg-white border-b shadow-sm shrink-0 flex justify-between items-center">
+        <div className="p-3 md:p-4 bg-white border-b shadow-sm shrink-0 flex justify-between items-center gap-2 overflow-x-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-            <TabsList className="bg-slate-100 rounded-lg p-1 h-10">
-              <TabsTrigger value="direct" className="rounded-md font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">
-                <ShoppingBag className="mr-2 h-3 w-3" /> Venta Rápida
+            <TabsList className="bg-slate-100 rounded-lg p-1 h-9 md:h-10">
+              <TabsTrigger value="direct" className="rounded-md font-black text-[7px] md:text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-3 md:px-4">
+                <ShoppingBag className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden xs:inline">Venta Rápida</span>
               </TabsTrigger>
-              <TabsTrigger value="tables" className="rounded-md font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">
-                <LayoutGrid className="mr-2 h-3 w-3" /> Plano Salón
+              <TabsTrigger value="tables" className="rounded-md font-black text-[7px] md:text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-3 md:px-4">
+                <LayoutGrid className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden xs:inline">Plano Salón</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <Button 
               variant="outline" 
-              className="h-9 px-4 rounded-xl border-secondary text-secondary font-black text-[8px] uppercase tracking-widest hover:bg-secondary hover:text-white transition-all"
+              className="h-8 md:h-9 px-2 md:px-4 rounded-lg md:rounded-xl border-secondary text-secondary font-black text-[6px] md:text-[8px] uppercase tracking-widest hover:bg-secondary hover:text-white transition-all"
               onClick={openCierreCaja}
             >
-              <Lock className="mr-2 h-3 w-3" /> Cierre de Caja
+              <Lock className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden sm:inline">Cierre de Caja</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-9 px-4 rounded-xl border-primary text-primary font-black text-[8px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
+              className="h-8 md:h-9 px-2 md:px-4 rounded-lg md:rounded-xl border-primary text-primary font-black text-[6px] md:text-[8px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
               onClick={() => router.push('/fiscal-control')}
             >
-              <ShieldCheck className="mr-2 h-3 w-3" /> Cierre Fiscal (Z)
+              <ShieldCheck className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden sm:inline">Cierre Fiscal (Z)</span>
             </Button>
-            <Badge variant="outline" className="text-[7px] font-black uppercase border-primary/20 text-primary">{effectiveVenueName}</Badge>
+            <Badge variant="outline" className="text-[6px] md:text-[7px] font-black uppercase border-primary/20 text-primary hidden sm:flex">{effectiveVenueName}</Badge>
           </div>
         </div>
 
         <ScrollArea className="flex-1">
           <Tabs value={activeTab} className="h-full">
-            <TabsContent value="direct" className="m-0 p-4 space-y-6 animate-in fade-in duration-500">
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <TabsContent value="direct" className="m-0 p-2 md:p-4 space-y-4 md:space-y-6 animate-in fade-in duration-500">
+              <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-between">
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 w-full md:w-auto">
                   {categories.map(cat => (
                     <Button 
                       key={cat} 
                       variant={activeCategory === cat ? "default" : "outline"} 
                       className={cn(
-                        "rounded-full font-black text-[7px] uppercase px-4 h-8 whitespace-nowrap border-none",
+                        "rounded-full font-black text-[6px] md:text-[7px] uppercase px-3 md:px-4 h-7 md:h-8 whitespace-nowrap border-none",
                         activeCategory === cat ? "bg-primary text-white" : "bg-white text-slate-400"
                       )}
                       onClick={() => setActiveCategory(cat)}
@@ -606,14 +606,14 @@ export default function POSPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-32">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 pb-28 md:pb-32">
                 {menuLoading ? (
-                  <div className="col-span-full py-20 text-center"><Loader2 className="animate-spin h-6 w-6 mx-auto opacity-20" /></div>
+                  <div className="col-span-full py-16 md:py-20 text-center"><Loader2 className="animate-spin h-5 md:h-6 w-5 md:w-6 mx-auto opacity-20" /></div>
                 ) : filteredMenu.map(item => (
                   <Card 
                     key={item.id} 
                     className={cn(
-                      "rounded-2xl border-none shadow-sm hover:shadow-lg transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
+                      "rounded-xl md:rounded-2xl border-none shadow-sm hover:shadow-lg transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
                       !item.available && "opacity-40 grayscale pointer-events-none"
                     )}
                     onClick={() => addToDirectCart(item)}
@@ -621,9 +621,9 @@ export default function POSPage() {
                     <div className="aspect-square relative overflow-hidden bg-slate-100">
                       <img src={item.imageUrl} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" alt={item.name} />
                     </div>
-                    <CardContent className="p-3">
-                      <p className="font-black text-[9px] text-slate-900 uppercase truncate mb-0.5">{item.name}</p>
-                      <p className="text-[9px] font-black text-primary">{formatCurrencyDetailed(item.price)}</p>
+                    <CardContent className="p-2 md:p-3">
+                      <p className="font-black text-[8px] md:text-[9px] text-slate-900 uppercase truncate mb-0.5">{item.name}</p>
+                      <p className="text-[8px] md:text-[9px] font-black text-primary">{formatCurrencyDetailed(item.price)}</p>
                     </CardContent>
                   </Card>
                 ))}

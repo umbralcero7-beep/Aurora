@@ -90,26 +90,26 @@ export default function MenuPage() {
   })
 
   return (
-    <div className="p-10 space-y-10 bg-white min-h-full max-w-[1400px] mx-auto font-body">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="p-4 md:p-6 lg:p-10 space-y-6 md:space-y-10 bg-white min-h-full max-w-[1400px] mx-auto font-body">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">La Carta • {effectiveVenueName}</h1>
+          <div className="flex items-center gap-2 md:gap-3">
+            <h1 className="text-xl md:text-2xl font-black tracking-tighter text-slate-900 uppercase">La Carta • {effectiveVenueName}</h1>
             {(!menuItems || menuItems.length === 0) && (
-              <Badge className="bg-primary/10 text-primary border-none font-black text-[8px] tracking-[0.2em] uppercase px-3 py-1">Carta Precargada</Badge>
+              <Badge className="bg-primary/10 text-primary border-none font-black text-[7px] md:text-[8px] tracking-[0.2em] uppercase px-2 md:px-3 py-0.5 md:py-1">Carta Precargada</Badge>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic hidden md:block">
             {isSupport ? 'Soberanía Global: Gestión centralizada de platos.' : 'Consulta visual de platos y disponibilidad en tiempo real.'}
           </p>
         </div>
-        <div className="flex gap-1.5 bg-slate-50 p-1.5 rounded-[1.5rem] border border-slate-100 overflow-x-auto max-w-full">
+        <div className="flex gap-1 bg-slate-50 p-1 rounded-[1.5rem] border border-slate-100 overflow-x-auto max-w-full">
           {categories.map(cat => (
             <Button 
               key={cat} 
               variant={activeCategory === cat ? "default" : "ghost"} 
               size="sm" 
-              className="text-[9px] font-black uppercase tracking-widest h-10 px-6 rounded-[1rem] whitespace-nowrap" 
+              className="text-[8px] md:text-[9px] font-black uppercase tracking-widest h-9 md:h-10 px-4 md:px-6 rounded-[1rem] whitespace-nowrap" 
               onClick={() => setActiveCategory(cat)}
             >
               {cat}
@@ -119,68 +119,68 @@ export default function MenuPage() {
       </div>
 
       <div className="relative">
-        <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+        <Search className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 h-4 md:h-5 w-4 md:w-5 text-slate-400" />
         <Input 
-          placeholder="¿Qué estás buscando? (Nombre, ingrediente, categoría...)"
-          className="pl-16 h-16 rounded-[1.8rem] bg-slate-50 border-none text-sm font-bold placeholder:text-slate-300 shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
+          placeholder="¿Qué estás buscando?"
+          className="pl-12 md:pl-16 h-12 md:h-16 rounded-[1.5rem] md:rounded-[1.8rem] bg-slate-50 border-none text-xs md:text-sm font-bold placeholder:text-slate-300 shadow-none focus-visible:ring-1 focus-visible:ring-primary/20"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-40 gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <p className="font-black text-primary uppercase text-[10px] tracking-widest">Sincronizando Carta...</p>
+        <div className="flex flex-col items-center justify-center py-20 md:py-40 gap-4">
+          <Loader2 className="h-8 md:h-10 w-8 md:w-10 animate-spin text-primary" />
+          <p className="font-black text-primary uppercase text-[9px] md:text-[10px] tracking-widest">Sincronizando Carta...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
           {filteredMenu.length === 0 ? (
-            <div className="col-span-full py-40 text-center border-4 border-dashed rounded-[2.5rem] bg-slate-50/50">
-              <UtensilsCrossed className="h-16 w-16 mx-auto mb-6 opacity-10 text-slate-400" />
+            <div className="col-span-full py-20 md:py-40 text-center border-4 border-dashed rounded-[2rem] md:rounded-[2.5rem] bg-slate-50/50">
+              <UtensilsCrossed className="h-12 md:h-16 w-12 md:w-16 mx-auto mb-4 md:mb-6 opacity-10 text-slate-400" />
               <p className="text-slate-300 font-black uppercase text-xs tracking-widest">No hay platos registrados</p>
             </div>
           ) : (
             filteredMenu.map((item) => (
-              <Card key={item.id} className="rounded-[2rem] border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col bg-white group">
+              <Card key={item.id} className="rounded-[1.5rem] md:rounded-[2rem] border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden flex flex-col bg-white group">
                 <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
                   {item.imageUrl ? (
                     <img src={item.imageUrl} alt={item.name} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="h-12 w-12 text-slate-200" />
+                      <ImageIcon className="h-8 md:h-12 w-8 md:h-12 text-slate-200" />
                     </div>
                   )}
-                  <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
-                    <Badge className={cn("px-4 py-1.5 rounded-full font-black text-[10px] uppercase shadow-lg border-none", item.available ? "bg-white text-emerald-600" : "bg-white text-slate-400")}>
+                  <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col gap-1.5 md:gap-2 items-end">
+                    <Badge className={cn("px-3 md:px-4 py-1 md:py-1.5 rounded-full font-black text-[8px] md:text-[10px] uppercase shadow-lg border-none", item.available ? "bg-white text-emerald-600" : "bg-white text-slate-400")}>
                       {item.available ? "Disponible" : "Agotado"}
                     </Badge>
                     {isSupport && (
-                      <Badge variant="outline" className="bg-slate-900/80 text-white border-none font-black text-[7px] uppercase px-3 py-1">
+                      <Badge variant="outline" className="bg-slate-900/80 text-white border-none font-black text-[6px] md:text-[7px] uppercase px-2 md:px-3 py-0.5 md:py-1">
                         {item.assignedVenue || 'Sede Central'}
                       </Badge>
                     )}
                   </div>
                 </div>
-                <CardHeader className="p-8 pb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <CardTitle className="text-lg font-black uppercase tracking-tight text-slate-900 group-hover:text-primary transition-colors">{item.name}</CardTitle>
+                <CardHeader className="p-4 md:p-8 pb-2 md:pb-4">
+                  <div className="flex justify-between items-start mb-1 md:mb-2">
+                    <CardTitle className="text-sm md:text-lg font-black uppercase tracking-tight text-slate-900 group-hover:text-primary transition-colors">{item.name}</CardTitle>
                   </div>
-                  <Badge variant="outline" className="w-fit text-[8px] font-black uppercase tracking-widest border-slate-200 text-slate-400 px-3 py-0.5 rounded-full">
+                  <Badge variant="outline" className="w-fit text-[7px] md:text-[8px] font-black uppercase tracking-widest border-slate-200 text-slate-400 px-2 md:px-3 py-0.5 rounded-full">
                     {item.category}
                   </Badge>
                 </CardHeader>
-                <CardContent className="p-8 pt-0 flex-1 flex flex-col justify-between">
-                  <p className="text-xs font-bold text-slate-500 leading-relaxed italic line-clamp-3 mt-4">
+                <CardContent className="p-4 md:p-8 pt-0 flex-1 flex flex-col justify-between">
+                  <p className="text-[10px] md:text-xs font-bold text-slate-500 leading-relaxed italic line-clamp-2 md:line-clamp-3 mt-2 md:mt-4">
                     "{item.description || "Sin descripción disponible para este plato."}"
                   </p>
-                  <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
+                  <div className="mt-4 md:mt-8 pt-4 md:pt-6 border-t border-slate-50 flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Precio Sugerido</span>
-                      <span className="text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(item.price)}</span>
+                      <span className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest">Precio</span>
+                      <span className="text-lg md:text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(item.price)}</span>
                     </div>
-                    <Button variant="ghost" size="icon" className="rounded-xl h-10 w-10 text-slate-200 group-hover:text-primary transition-all">
-                      <Info className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" className="rounded-xl h-8 md:h-10 w-8 md:w-10 text-slate-200 group-hover:text-primary transition-all">
+                      <Info className="h-4 md:h-5 w-4 md:w-5" />
                     </Button>
                   </div>
                 </CardContent>
@@ -190,8 +190,8 @@ export default function MenuPage() {
         </div>
       )}
 
-      <div className="pt-20 pb-10 text-center opacity-30">
-        <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-400">
+      <div className="pt-16 md:pt-20 pb-8 md:pb-10 text-center opacity-30">
+        <p className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.5em] text-slate-400">
           AURORA OS • PROTOCOLO {isSupport ? 'GLOBAL' : effectiveVenueName.toUpperCase()}
         </p>
       </div>

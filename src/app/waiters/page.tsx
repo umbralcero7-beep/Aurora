@@ -317,84 +317,84 @@ export default function WaitersPage() {
             <Users className="h-8 w-8 text-primary" />
             Bitácora de Meseros
           </h1>
-          <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">
+          <p className="text-[9px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic hidden md:block">
             Rendimiento individual por mesero • {format(monthRange.start, 'MMMM yyyy', { locale: es })}
           </p>
         </div>
-        <div className="flex gap-3 items-center">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-start sm:items-center w-full sm:w-auto">
           <Input
             type="month"
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
-            className="w-40 h-10 rounded-xl bg-slate-50 border-slate-100 text-[10px] font-bold"
+            className="w-full sm:w-40 h-9 md:h-10 rounded-xl bg-slate-50 border-slate-100 text-[9px] md:text-[10px] font-bold"
           />
-          <Button variant="outline" className="rounded-xl h-10 border-slate-200 font-black text-[9px] uppercase" onClick={exportToExcel}>
-            <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> Exportar
+          <Button variant="outline" className="w-full sm:w-auto h-9 md:h-10 rounded-xl border-slate-200 font-black text-[8px] md:text-[9px] uppercase" onClick={exportToExcel}>
+            <FileSpreadsheet className="mr-1 md:mr-2 h-3 md:h-4 w-3 md:w-4 text-emerald-500" /> <span className="hidden sm:inline">Exportar</span>
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-900 text-white border-none shadow-xl rounded-[2rem] p-2">
-          <CardHeader className="pb-1"><CardTitle className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Meseros</CardTitle></CardHeader>
-          <CardContent><div className="text-3xl font-black">{waiterStats.length}</div></CardContent>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <Card className="bg-slate-900 text-white border-none shadow-xl rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2">
+          <CardHeader className="pb-0.5 md:pb-1"><CardTitle className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Meseros</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl md:text-3xl font-black">{waiterStats.length}</div></CardContent>
         </Card>
-        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2rem] p-2">
-          <CardHeader className="pb-1"><CardTitle className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Mesas</CardTitle></CardHeader>
-          <CardContent><div className="text-3xl font-black text-slate-900">{waiterStats.reduce((a, w) => a + w.tablesAttended, 0)}</div></CardContent>
+        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2">
+          <CardHeader className="pb-0.5 md:pb-1"><CardTitle className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Mesas</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl md:text-3xl font-black text-slate-900">{waiterStats.reduce((a, w) => a + w.tablesAttended, 0)}</div></CardContent>
         </Card>
-        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2rem] p-2">
-          <CardHeader className="pb-1"><CardTitle className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Comensales</CardTitle></CardHeader>
-          <CardContent><div className="text-3xl font-black text-slate-900">{waiterStats.reduce((a, w) => a + w.guestsServed, 0)}</div></CardContent>
+        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2">
+          <CardHeader className="pb-0.5 md:pb-1"><CardTitle className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Comensales</CardTitle></CardHeader>
+          <CardContent><div className="text-2xl md:text-3xl font-black text-slate-900">{waiterStats.reduce((a, w) => a + w.guestsServed, 0)}</div></CardContent>
         </Card>
-        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2rem] p-2">
-          <CardHeader className="pb-1"><CardTitle className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Ventas Equipo</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-black text-primary">{formatCurrencyDetailed(waiterStats.reduce((a, w) => a + w.totalSales, 0))}</div></CardContent>
+        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2">
+          <CardHeader className="pb-0.5 md:pb-1"><CardTitle className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest">Ventas Equipo</CardTitle></CardHeader>
+          <CardContent><div className="text-lg md:text-2xl font-black text-primary">{formatCurrencyDetailed(waiterStats.reduce((a, w) => a + w.totalSales, 0))}</div></CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
         <div className="lg:col-span-5">
-          <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-6 px-8">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-sm font-black uppercase tracking-tighter flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-primary" /> Ranking del Mes
+          <Card className="rounded-[1.5rem] md:rounded-[2.5rem] border-slate-100 shadow-2xl overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 md:py-6 px-4 md:px-8">
+              <div className="flex justify-between items-center gap-2">
+                <CardTitle className="text-xs md:text-sm font-black uppercase tracking-tighter flex items-center gap-1.5 md:gap-2">
+                  <BarChart3 className="h-3 md:h-4 w-3 md:w-4 text-primary" /> Ranking del Mes
                 </CardTitle>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                  <Input placeholder="Buscar..." className="pl-8 h-8 w-32 rounded-lg bg-white border-slate-100 text-[10px]" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <Search className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
+                  <Input placeholder="Buscar..." className="pl-8 h-8 w-24 md:w-32 rounded-lg bg-white border-slate-100 text-[9px] md:text-[10px]" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
-                <div className="p-4 space-y-2">
+              <ScrollArea className="h-[350px] md:h-[500px]">
+                <div className="p-2 md:p-4 space-y-1.5 md:space-y-2">
                   {filteredWaiters.length === 0 ? (
-                    <div className="text-center py-20 opacity-20 text-xs font-black uppercase">Sin datos</div>
+                    <div className="text-center py-16 md:py-20 opacity-20 text-xs font-black uppercase">Sin datos</div>
                   ) : (
                     filteredWaiters.map((w, idx) => (
                       <button
                         key={w.waiterName}
                         onClick={() => { setSelectedWaiter(w.waiterName); setViewMode('detail') }}
                         className={cn(
-                          "w-full p-4 rounded-2xl text-left transition-all flex items-center gap-4",
+                          "w-full p-3 md:p-4 rounded-xl md:rounded-2xl text-left transition-all flex items-center gap-3 md:gap-4",
                           selectedWaiter === w.waiterName ? "bg-primary text-white shadow-lg" : "bg-slate-50 hover:bg-slate-100"
                         )}
                       >
                         <div className={cn(
-                          "h-10 w-10 rounded-full flex items-center justify-center font-black text-sm shrink-0",
+                          "h-8 md:h-10 w-8 md:w-10 rounded-full flex items-center justify-center font-black text-xs md:text-sm shrink-0",
                           selectedWaiter === w.waiterName ? "bg-white/20 text-white" : idx === 0 ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-500"
                         )}>
                           {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-black text-xs uppercase truncate">{w.waiterName}</p>
-                          <div className="flex gap-3 mt-1">
-                            <span className={cn("text-[9px] font-bold", selectedWaiter === w.waiterName ? "text-white/70" : "text-slate-400")}>
+                          <p className="font-black text-[10px] md:text-xs uppercase truncate">{w.waiterName}</p>
+                          <div className="flex gap-2 md:gap-3 mt-0.5 md:mt-1">
+                            <span className={cn("text-[8px] md:text-[9px] font-bold", selectedWaiter === w.waiterName ? "text-white/70" : "text-slate-400")}>
                               {w.tablesAttended} mesas
                             </span>
-                            <span className={cn("text-[9px] font-bold", selectedWaiter === w.waiterName ? "text-white/70" : "text-slate-400")}>
+                            <span className={cn("text-[8px] md:text-[9px] font-bold", selectedWaiter === w.waiterName ? "text-white/70" : "text-slate-400")}>
                               {w.guestsServed} personas
                             </span>
                           </div>
