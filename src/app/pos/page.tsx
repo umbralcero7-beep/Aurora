@@ -113,6 +113,11 @@ export default function POSPage() {
     address: ""
   })
 
+  // Product Modifier Modal State
+  const [showModifierModal, setShowModifierModal] = useState(false)
+  const [selectedProductForModifier, setSelectedProductForModifier] = useState<any>(null)
+  const [selectedModifiers, setSelectedModifiers] = useState<string[]>([])
+
   // Cierre de Caja State
   const [showCierreCaja, setShowCierreCaja] = useState(false)
   const [cierreStep, setCierreStep] = useState(1)
@@ -600,7 +605,12 @@ export default function POSPage() {
                 <button 
                   key={item.id} 
                   className="w-full p-3 flex items-center justify-between hover:bg-slate-700 border-b border-slate-700 last:border-0"
-                  onClick={() => { addToDirectCart(item); setMenuSearch('') }}
+                  onClick={() => { 
+                    setSelectedProductForModifier(item)
+                    setSelectedModifiers([])
+                    setShowModifierModal(true)
+                    setMenuSearch('') 
+                  }}
                 >
                   <span className="text-[9px] font-bold text-slate-200 uppercase truncate">{item.name}</span>
                   <span className="text-[9px] font-black text-primary">{formatCurrencyDetailed(item.price)}</span>
@@ -682,7 +692,13 @@ export default function POSPage() {
                       "rounded-xl border-none shadow-md hover:shadow-xl transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
                       !item.available && "opacity-50 grayscale"
                     )}
-                    onClick={() => addToDirectCart(item)}
+                    onClick={() => {
+                      if (item.available) {
+                        setSelectedProductForModifier(item)
+                        setSelectedModifiers([])
+                        setShowModifierModal(true)
+                      }
+                    }}
                   >
                     <div className="aspect-square relative overflow-hidden bg-slate-100">
                       {item.imageUrl ? (
@@ -800,6 +816,74 @@ export default function POSPage() {
           </Button>
         </CardFooter>
       </div>
+
+      {/* Product Modifier Modal */}
+      <Dialog open={showModifierModal} onOpenChange={setShowModifierModal}>
+        <DialogContent className="max-w-md rounded-2xl p-6 bg-white border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black uppercase">Agregar: {selectedProductForModifier?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Modificadores disponibles</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'sin_cebolla', label: 'Sin Cebolla' },
+                { id: 'sin_tomate', label: 'Sin Tomate' },
+                { id: 'sin_lechuga', label: 'Sin Lechuga' },
+                { id: 'termo_medio', label: 'Término Medio' },
+                { id: 'tres_cuartos', label: 'Tres Cuartos' },
+                { id: 'bien_cocido', label: 'Bien Cocido' },
+                { id: 'con_queso', label: 'Con Queso Extra' },
+                { id: 'sin_salsa', label: 'Sin Salsa' },
+              ].map(mod => (
+                <button
+                  key={mod.id}
+                  onClick={() => {
+                    setSelectedModifiers(prev => 
+                      prev.includes(mod.id) 
+                        ? prev.filter(m => m !== mod.id)
+                        : [...prev, mod.id]
+                    )
+                  }}
+                  className={cn(
+                    "p-3 rounded-xl border-2 text-left transition-all",
+                    selectedModifiers.includes(mod.id)
+                      ? "border-primary bg-primary/10"
+                      : "border-slate-200 hover:border-slate-300"
+                  )}
+                >
+                  <span className="text-xs font-black uppercase">{mod.label}</span>
+                </button>
+              ))}
+            </div>
+            {selectedModifiers.length > 0 && (
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <p className="text-[9px] font-black uppercase text-slate-400">Seleccionados:</p>
+                <p className="text-[10px] font-bold text-slate-700 mt-1">
+                  {selectedModifiers.map(m => m.replace(/_/g, ' ')).join(', ')}
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1 h-12 rounded-xl font-black text-xs uppercase" onClick={() => { setShowModifierModal(false); setSelectedModifiers([]) }}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 h-12 rounded-xl font-black text-xs uppercase bg-primary hover:bg-primary/90" onClick={() => {
+              if (selectedProductForModifier) {
+                addToDirectCart({
+                  ...selectedProductForModifier,
+                  modifiers: selectedModifiers
+                })
+              }
+              setShowModifierModal(false)
+              setSelectedModifiers([])
+            }}>
+              Agregar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Cierre de Caja Dialog */}
       <Dialog open={showCierreCaja} onOpenChange={setShowCierreCaja}>
