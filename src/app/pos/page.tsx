@@ -113,6 +113,8 @@ export default function POSPage() {
     email: "",
     address: ""
   })
+  const [showCustomerSearch, setShowCustomerSearch] = useState(false)
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("")
 
   // Product Modifier Modal State
   const [showModifierModal, setShowModifierModal] = useState(false)
@@ -190,6 +192,13 @@ export default function POSPage() {
     if (!db || !effectiveBusinessId) return null
     return query(collection(db, "fiscal_reports"), where("businessId", "==", effectiveBusinessId))
   }, [db, effectiveBusinessId])
+
+  const customersQuery = useMemoFirebase(() => {
+    if (!db || !effectiveBusinessId) return null
+    return query(collection(db, "customers"), where("businessId", "==", effectiveBusinessId))
+  }, [db, effectiveBusinessId])
+
+  const { data: allCustomers } = useCollection(customersQuery)
 
   const { data: allInvoices } = useCollection(invoicesQuery)
   const { data: allExpenses } = useCollection(expensesQuery)
@@ -812,6 +821,40 @@ export default function POSPage() {
         </CardContent>
 
         <CardFooter className="p-4 bg-white border-t space-y-4 shrink-0">
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-slate-500" />
+              <Label htmlFor="electronic-toggle" className="text-xs font-black uppercase cursor-pointer">Factura Electrónica</Label>
+            </div>
+            <Switch 
+              id="electronic-toggle" 
+              checked={isElectronic} 
+              onCheckedChange={(checked) => {
+                setIsElectronic(checked)
+                if (!checked) {
+                  setCustomerData({ name: "", taxId: "", email: "", address: "" })
+                } else {
+                  setShowCustomerSearch(true)
+                }
+              }}
+            />
+          </div>
+          
+          {isElectronic && (
+            <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] font-black uppercase text-blue-600">Cliente</span>
+                <button onClick={() => setShowCustomerSearch(true)} className="text-[8px] font-bold text-blue-600 underline">
+                  {customerData.name ? "Cambiar" : "Buscar"}
+                </button>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-slate-700">{customerData.name || "Sin seleccionar"}</p>
+                {customerData.taxId && <p className="text-[9px] font-black text-slate-400 uppercase">NIT: {customerData.taxId}</p>}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-[10px] font-black uppercase text-slate-400">Subtotal</span>
@@ -829,7 +872,7 @@ export default function POSPage() {
           
           <Button 
             className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20"
-            disabled={currentTotal === 0 || isFinishing}
+            disabled={currentTotal === 0 || isFinishing || (isElectronic && (!customerData.name || !customerData.taxId))}
             onClick={handleFinalizeInvoice}
           >
             {isFinishing ? <Loader2 className="animate-spin h-5 w-5" /> : "Proceder al Pago"}
@@ -900,6 +943,98 @@ export default function POSPage() {
               setSelectedModifiers([])
             }}>
               Agregar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Customer Search Dialog for Electronic Invoice */}
+      <Dialog open={showCustomerSearch} onOpenChange={setShowCustomerSearch}>
+        <DialogContent className="max-w-md rounded-2xl p-6 bg-white border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black uppercase">Buscar Cliente (NIT)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input 
+              placeholder="Buscar por nombre o NIT..." 
+              value={customerSearchTerm}
+              onChange={(e) => setCustomerSearchTerm(e.target.value)}
+              className="h-12 rounded-xl"
+            />
+            <div className="max-h-[300px] overflow-y-auto space-y-2">
+              {(allCustomers || []).filter(c => {
+                if (!customerSearchTerm) return true
+                const search = customerSearchTerm.toLowerCase()
+                return (c.name || "").toLowerCase().includes(search) || (c.taxId || "").toLowerCase().includes(search)
+              }).slice(0, 10).map((customer: any) => (
+                <button
+                  key={customer.id}
+                  onClick={() => {
+                    setCustomerData({
+                      name: customer.name || "",
+                      taxId: customer.taxId || "",
+                      email: customer.email || "",
+                      address: customer.address || ""
+                    })
+                    setShowCustomerSearch(false)
+                    setCustomerSearchTerm("")
+                  }}
+                  className="w-full p-3 text-left bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <p className="text-sm font-bold text-slate-700">{customer.name}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase">NIT: {customer.taxId || "S/N"}</p>
+                </button>
+              ))}
+              {(allCustomers || []).filter(c => {
+                if (!customerSearchTerm) return true
+                const search = customerSearchTerm.toLowerCase()
+                return (c.name || "").toLowerCase().includes(search) || (c.taxId || "").toLowerCase().includes(search)
+              }).length === 0 && customerSearchTerm && (
+                <p className="text-center text-[10px] text-slate-400 py-4">No se encontraron clientes</p>
+              )}
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-[10px] font-black text-slate-400 uppercase mb-2">O ingresa manualmente:</p>
+              <div className="space-y-2">
+                <Input 
+                  placeholder="Nombre del cliente"
+                  value={customerData.name}
+                  onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
+                  className="h-10 rounded-lg text-xs"
+                />
+                <Input 
+                  placeholder="NIT/RUT"
+                  value={customerData.taxId}
+                  onChange={(e) => setCustomerData({...customerData, taxId: e.target.value})}
+                  className="h-10 rounded-lg text-xs"
+                />
+                <Input 
+                  placeholder="Email"
+                  type="email"
+                  value={customerData.email}
+                  onChange={(e) => setCustomerData({...customerData, email: e.target.value})}
+                  className="h-10 rounded-lg text-xs"
+                />
+                <Input 
+                  placeholder="Dirección"
+                  value={customerData.address}
+                  onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
+                  className="h-10 rounded-lg text-xs"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1 h-12 rounded-xl font-black text-xs uppercase" onClick={() => { setShowCustomerSearch(false); setCustomerSearchTerm("") }}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 h-12 rounded-xl font-black text-xs uppercase bg-primary hover:bg-primary/90" onClick={() => {
+              if (customerData.name && customerData.taxId) {
+                setShowCustomerSearch(false)
+                setCustomerSearchTerm("")
+              }
+            }}>
+              Confirmar
             </Button>
           </div>
         </DialogContent>

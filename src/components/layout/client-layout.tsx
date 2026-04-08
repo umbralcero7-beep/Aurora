@@ -29,6 +29,33 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useLanguage } from '@/context/language-context';
+import { ThemeProvider } from '@/components/theme-provider';
+import { useTheme } from 'next-themes';
+import { Sun, Moon } from 'lucide-react';
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <div className="h-6 w-6" />;
+
+  return (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="h-6 w-6 md:h-7 md:w-7 bg-slate-100/50 hover:bg-white rounded-md flex items-center justify-center transition-all border border-slate-200/50"
+    >
+      {theme === 'dark' ? (
+        <Moon className="h-3 w-3.5 text-slate-500" />
+      ) : (
+        <Sun className="h-3 w-3.5 text-slate-500" />
+      )}
+    </button>
+  );
+}
 
 function MobileBottomNav() {
   const pathname = usePathname();
@@ -187,6 +214,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-1.5 md:gap-2">
+              <ThemeToggle />
               <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 rounded-full border border-slate-100">
                 {isOnline ? (
                   <Wifi className="h-2 w-2.5 text-emerald-500" />
@@ -234,13 +262,15 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <FirebaseClientProvider>
-      <LanguageProvider>
-        <AuthWrapper>
-          {children}
-        </AuthWrapper>
-      </LanguageProvider>
-      <Toaster />
-    </FirebaseClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <FirebaseClientProvider>
+        <LanguageProvider>
+          <AuthWrapper>
+            {children}
+          </AuthWrapper>
+        </LanguageProvider>
+        <Toaster />
+      </FirebaseClientProvider>
+    </ThemeProvider>
   );
 }
