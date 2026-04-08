@@ -548,15 +548,35 @@ export default function POSPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <Button 
               variant="outline" 
-              className="h-8 md:h-9 px-2 md:px-3 rounded-lg md:rounded-xl border-primary/30 text-primary font-black text-[6px] md:text-[7px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
-              onClick={() => setIsElectronic(!isElectronic)}
+              size="icon"
+              className="h-8 md:h-9 w-8 md:w-9 rounded-lg md:rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100"
+              onClick={openCierreCaja}
+              title="Cierre de Caja"
             >
-              <FileText className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden sm:inline">{isElectronic ? 'Electrónica' : 'POS'}</span>
+              <Lock className="h-3.5 md:h-4 w-3.5 md:w-4" />
             </Button>
-            <Badge variant="outline" className="text-[6px] md:text-[7px] font-black uppercase border-primary/20 text-primary hidden sm:flex">{effectiveVenueName}</Badge>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-8 md:h-9 w-8 md:w-9 rounded-lg md:rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100"
+              onClick={() => router.push('/fiscal-control')}
+              title="Cierre Fiscal (Z)"
+            >
+              <ShieldCheck className="h-3.5 md:h-4 w-3.5 md:w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon"
+              className="h-8 md:h-9 w-8 md:w-9 rounded-lg md:rounded-xl border-primary/30 text-primary hover:bg-primary hover:text-white"
+              onClick={() => setIsElectronic(!isElectronic)}
+              title={isElectronic ? 'Cambiar a POS' : 'Cambiar a Factura Electrónica'}
+            >
+              <FileText className="h-3.5 md:h-4 w-3.5 md:w-4" />
+            </Button>
+            <Badge variant="outline" className="text-[5px] md:text-[6px] font-black uppercase border-primary/20 text-primary hidden lg:flex px-2">{effectiveVenueName}</Badge>
           </div>
         </div>
 
