@@ -531,111 +531,111 @@ export default function POSPage() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-12 h-[calc(100svh-2.5rem)] bg-slate-50/50 font-body overflow-hidden">
-      
-      <div className={cn(
-        "lg:col-span-8 flex flex-col h-full overflow-hidden relative",
-        showCheckoutMobile ? "hidden lg:flex" : "flex"
-      )}>
-        <div className="p-3 md:p-4 bg-white border-b shadow-sm shrink-0 flex justify-between items-center gap-2 overflow-x-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-            <TabsList className="bg-slate-100 rounded-lg p-1 h-9 md:h-10">
-              <TabsTrigger value="direct" className="rounded-md font-black text-[7px] md:text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-3 md:px-4">
-                <ShoppingBag className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden xs:inline">Venta Rápida</span>
-              </TabsTrigger>
-              <TabsTrigger value="tables" className="rounded-md font-black text-[7px] md:text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-3 md:px-4">
-                <LayoutGrid className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden xs:inline">Plano Salón</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+    <div className="flex h-[calc(100svh-2.5rem)] bg-slate-900 font-body overflow-hidden">
+      {/* PANEL IZQUIERDO: Control de Flujo (20%) */}
+      <div className="w-1/5 min-w-[200px] max-w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col">
+        {/* Selector de Modo */}
+        <div className="p-4 border-b border-slate-800">
+          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Modo de Operación</h2>
+          <div className="flex flex-col gap-2">
             <Button 
-              variant="outline" 
-              size="icon"
-              className="h-8 md:h-9 w-8 md:w-9 rounded-lg md:rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100"
-              onClick={openCierreCaja}
-              title="Cierre de Caja"
+              variant={activeTab === 'tables' ? 'default' : 'ghost'}
+              className={cn(
+                "h-14 justify-start px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
+                activeTab === 'tables' ? "bg-primary text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
+              )}
+              onClick={() => setActiveTab('tables')}
             >
-              <Lock className="h-3.5 md:h-4 w-3.5 md:w-4" />
+              <LayoutGrid className="mr-3 h-5 w-5" /> Mapeo Mesas
             </Button>
             <Button 
-              variant="outline" 
-              size="icon"
-              className="h-8 md:h-9 w-8 md:w-9 rounded-lg md:rounded-xl border-slate-200 text-slate-500 hover:bg-slate-100"
-              onClick={() => router.push('/fiscal-control')}
-              title="Cierre Fiscal (Z)"
+              variant={activeTab === 'direct' ? 'default' : 'ghost'}
+              className={cn(
+                "h-14 justify-start px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
+                activeTab === 'direct' ? "bg-primary text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
+              )}
+              onClick={() => setActiveTab('direct')}
             >
-              <ShieldCheck className="h-3.5 md:h-4 w-3.5 md:w-4" />
+              <ShoppingBag className="mr-3 h-5 w-5" /> Venta Rápida
             </Button>
-            <Button 
-              variant="outline" 
-              size="icon"
-              className="h-8 md:h-9 w-8 md:w-9 rounded-lg md:rounded-xl border-primary/30 text-primary hover:bg-primary hover:text-white"
-              onClick={() => setIsElectronic(!isElectronic)}
-              title={isElectronic ? 'Cambiar a POS' : 'Cambiar a Factura Electrónica'}
-            >
-              <FileText className="h-3.5 md:h-4 w-3.5 md:w-4" />
-            </Button>
-            <Badge variant="outline" className="text-[5px] md:text-[6px] font-black uppercase border-primary/20 text-primary hidden lg:flex px-2">{effectiveVenueName}</Badge>
           </div>
         </div>
 
+        {/* Estado del Sistema */}
+        <div className="p-4 border-b border-slate-800">
+          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Estado del Sistema</h2>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[9px] font-black text-slate-300 uppercase">DIAN</span>
+              </div>
+              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[7px] font-black uppercase">Conectado</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                <span className="text-[9px] font-black text-slate-300 uppercase">Caja</span>
+              </div>
+              <span className="text-[9px] font-black text-blue-400">Abierta</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Buscador Global */}
+        <div className="p-4 flex-1">
+          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Buscar Producto</h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Input 
+              placeholder="Código o nombre..." 
+              className="pl-10 h-12 bg-slate-900 border-slate-700 text-slate-200 font-bold text-xs placeholder:text-slate-600 rounded-xl"
+              value={menuSearch}
+              onChange={(e) => setMenuSearch(e.target.value)}
+            />
+          </div>
+          {menuSearch && filteredMenu.length > 0 && (
+            <div className="mt-2 bg-slate-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
+              {filteredMenu.slice(0, 5).map(item => (
+                <button 
+                  key={item.id} 
+                  className="w-full p-3 flex items-center justify-between hover:bg-slate-700 border-b border-slate-700 last:border-0"
+                  onClick={() => { addToDirectCart(item); setMenuSearch('') }}
+                >
+                  <span className="text-[9px] font-bold text-slate-200 uppercase truncate">{item.name}</span>
+                  <span className="text-[9px] font-black text-primary">{formatCurrencyDetailed(item.price)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Categorías */}
+        <div className="p-4 border-t border-slate-800">
+          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Categorías</h2>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "px-3 py-2 rounded-lg text-[8px] font-black uppercase transition-all",
+                  activeCategory === cat ? "bg-primary text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* PANEL CENTRAL: Área Dinámica (55%) */}
+      <div className="flex-1 bg-slate-50 overflow-hidden flex flex-col">
         <ScrollArea className="flex-1">
           <Tabs value={activeTab} className="h-full">
-            <TabsContent value="direct" className="m-0 p-2 md:p-4 space-y-4 md:space-y-6 animate-in fade-in duration-500">
-              <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-center justify-between">
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 w-full md:w-auto">
-                  {categories.map(cat => (
-                    <Button 
-                      key={cat} 
-                      variant={activeCategory === cat ? "default" : "outline"} 
-                      className={cn(
-                        "rounded-full font-black text-[6px] md:text-[7px] uppercase px-3 md:px-4 h-7 md:h-8 whitespace-nowrap border-none",
-                        activeCategory === cat ? "bg-primary text-white" : "bg-white text-slate-400"
-                      )}
-                      onClick={() => setActiveCategory(cat)}
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
-                <div className="relative w-full md:w-48">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-300" />
-                  <Input 
-                    placeholder="Buscar..." 
-                    className="pl-9 h-9 rounded-lg bg-white border-none font-bold text-[10px] shadow-sm"
-                    value={menuSearch}
-                    onChange={(e) => setMenuSearch(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3 pb-28 md:pb-32">
-                {menuLoading ? (
-                  <div className="col-span-full py-16 md:py-20 text-center"><Loader2 className="animate-spin h-5 md:h-6 w-5 md:w-6 mx-auto opacity-20" /></div>
-                ) : filteredMenu.map(item => (
-                  <Card 
-                    key={item.id} 
-                    className={cn(
-                      "rounded-xl md:rounded-2xl border-none shadow-sm hover:shadow-lg transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
-                      !item.available && "opacity-40 grayscale pointer-events-none"
-                    )}
-                    onClick={() => addToDirectCart(item)}
-                  >
-                    <div className="aspect-square relative overflow-hidden bg-slate-100">
-                      <img src={item.imageUrl} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500" alt={item.name} />
-                    </div>
-                    <CardContent className="p-2 md:p-3">
-                      <p className="font-black text-[8px] md:text-[9px] text-slate-900 uppercase truncate mb-0.5">{item.name}</p>
-                      <p className="text-[8px] md:text-[9px] font-black text-primary">{formatCurrencyDetailed(item.price)}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="tables" className="m-0 p-6 animate-in fade-in duration-500">
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+            <TabsContent value="tables" className="m-0 p-4 animate-in fade-in duration-300">
+              <div className="grid grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {tables.map(num => {
                   const order = tableData[num]
                   const status = !order ? 'free' : (order.status === 'Ready' ? 'ready' : 'occupied')
@@ -643,311 +643,163 @@ export default function POSPage() {
                     <Card 
                       key={num} 
                       className={cn(
-                        "rounded-[2rem] border-2 transition-all cursor-pointer h-32 flex flex-col justify-center items-center gap-1 group active:scale-95",
-                        status === 'free' ? "bg-white border-slate-100" : 
+                        "rounded-2xl border-2 transition-all cursor-pointer h-24 flex flex-col justify-center items-center gap-2 group active:scale-95",
+                        status === 'free' ? "bg-white border-slate-200 hover:border-slate-300" : 
                         status === 'ready' ? "bg-amber-50 border-amber-400 shadow-lg" : 
-                        "bg-emerald-50 border-emerald-500 shadow-lg",
+                        "bg-blue-50 border-blue-400 shadow-lg",
                         selectedOrder?.tableNumber === num ? "ring-4 ring-primary/30 border-primary" : ""
                       )}
                       onClick={() => status !== 'free' && selectOrder(order)}
                     >
                       <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center text-sm font-black",
+                        "h-12 w-12 rounded-full flex items-center justify-center text-lg font-black",
                         status === 'free' ? "bg-slate-100 text-slate-400" : 
-                        status === 'ready' ? "bg-amber-400 text-white" : "bg-emerald-500 text-white"
+                        status === 'ready' ? "bg-amber-400 text-white" : "bg-blue-500 text-white"
                       )}>
                         {num}
                       </div>
-                      <span className={cn("text-[7px] font-black uppercase tracking-widest", 
-                        status === 'free' ? "text-slate-300" : status === 'ready' ? "text-amber-600" : "text-emerald-600"
+                      <span className={cn("text-[8px] font-black uppercase tracking-widest", 
+                        status === 'free' ? "text-slate-300" : status === 'ready' ? "text-amber-600" : "text-blue-600"
                       )}>
-                        {status === 'free' ? 'Libre' : status === 'ready' ? 'Listo' : 'Ocupada'}
+                        {status === 'free' ? 'Libre' : status === 'ready' ? 'Lista' : 'Ocupada'}
                       </span>
                     </Card>
                   )
                 })}
               </div>
             </TabsContent>
-          </Tabs>
-        </ScrollArea>
 
-        {directCart.length > 0 && !showCheckoutMobile && (
-          <div className="lg:hidden fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom-5 duration-500">
-            <Button 
-              onClick={() => setShowCheckoutMobile(true)}
-              className="w-full h-14 bg-slate-900 text-white rounded-xl shadow-2xl flex justify-between px-6"
-            >
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="h-5 w-5 text-primary" />
-                <div className="flex flex-col items-start">
-                  <span className="text-[7px] font-black uppercase text-slate-400 tracking-widest">
-                    {isElectronic ? "Factura Electrónica" : "Proceder"} · {directCart.reduce((a, i) => a + i.quantity, 0)} items
-                  </span>
-                  <span className="text-sm font-black text-white">{formatCurrencyDetailed(currentTotal)}</span>
-                </div>
-              </div>
-              <ChevronUp className="h-4 w-4 text-slate-500 animate-bounce" />
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <Card className={cn(
-        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl z-30 min-h-0",
-        showCheckoutMobile ? "fixed inset-0 h-full w-full bg-slate-50" : "hidden lg:flex bg-white"
-      )}>
-        <CardHeader className="bg-slate-900 text-white p-3 md:p-4 flex flex-row justify-between items-center shrink-0">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" className="h-7 w-7 md:h-8 md:w-8 text-white/70 p-0 mr-1" onClick={() => {
-              setShowCheckoutMobile(false)
-              if (selectedOrder) {
-                setSelectedOrder(null)
-                setDirectCart([])
-              }
-            }}>
-              <ArrowLeftRight className="h-3.5 md:h-4 w-3.5 md:w-4" />
-            </Button>
-            <Receipt className="h-4 md:h-5 w-4 md:w-5 text-primary" />
-            <div>
-              <CardTitle className="text-xs md:text-sm font-black uppercase tracking-tighter">
-                {directCart.length > 0 ? "Venta Rápida" : `Mesa ${selectedOrder?.tableNumber || '?'}`}
-              </CardTitle>
-              <p className="text-[6px] md:text-[7px] font-black text-slate-400 uppercase tracking-widest italic">Cierre Fiscal</p>
-            </div>
-          </div>
-          <Button variant="ghost" className="text-white/70 font-black text-[7px] md:text-[8px] uppercase tracking-widest h-7 md:h-8 px-2 md:px-3 gap-1" onClick={() => {
-            setShowCheckoutMobile(false)
-            if (selectedOrder) {
-              setSelectedOrder(null)
-              setDirectCart([])
-            }
-          }}>
-            <ArrowRight className="h-3 md:h-3.5 w-3 md:w-3.5" /> <span className="hidden sm:inline">Volver</span>
-          </Button>
-        </CardHeader>
-
-        <CardContent className="flex-1 min-h-0 p-0 overflow-hidden flex flex-col bg-slate-50/20">
-          <ScrollArea ref={checkoutScrollRef} className="flex-1 min-h-0">
-            <div className="divide-y divide-slate-100">
-              <div className="p-4 bg-white space-y-3">
-                <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest border-b pb-1.5 flex justify-between">
-                  <span>Productos</span>
-                  {directCart.length > 0 && <button onClick={() => setDirectCart([])} className="text-destructive font-black">Vaciar</button>}
-                </p>
-                
-                {(directCart.length === 0 && !selectedOrder) ? (
-                  <div className="py-10 text-center opacity-20 flex flex-col items-center gap-2">
-                    <Utensils className="h-8 w-8" />
-                    <p className="font-black uppercase text-[8px]">Esperando...</p>
+            <TabsContent value="direct" className="m-0 p-4 animate-in fade-in duration-300">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {menuLoading ? (
+                  <div className="col-span-full py-20 text-center">
+                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary opacity-50" />
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {(directCart.length > 0 ? directCart : (selectedOrder?.items || [])).map((item: any) => (
-                      <div key={item.id} className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center bg-slate-50 rounded-md p-0.5 border text-[9px] font-black">
-                            <span className="w-5 text-center">{item.quantity}</span>
-                          </div>
-                          <p className="font-black text-[10px] text-slate-900 uppercase truncate max-w-[120px]">{item.name}</p>
-                        </div>
-                        <p className="font-black text-slate-900 text-[10px]">{formatCurrencyDetailed(item.price * item.quantity)}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {(directCart.length > 0 || selectedOrder) && (
-                <>
-                  <div className="p-4 space-y-4 bg-white">
-                    <div className="flex items-center justify-between px-2">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-primary" />
-                        <Label htmlFor="electronic-toggle" className="text-[9px] font-black uppercase tracking-widest text-slate-600">Factura Electrónica</Label>
-                      </div>
-                      <Switch 
-                        id="electronic-toggle"
-                        checked={isElectronic}
-                        onCheckedChange={setIsElectronic}
-                        className="data-[state=checked]:bg-primary"
-                      />
-                    </div>
-
-                    {isElectronic && (
-                      <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="col-span-2 relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                          <Input 
-                            placeholder="Nombre / Razón Social" 
-                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold uppercase"
-                            value={customerData.name}
-                            onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
-                          />
-                        </div>
-                        <div className="relative">
-                          <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                          <Input 
-                            placeholder="NIT / RUT" 
-                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold"
-                            value={customerData.taxId}
-                            onChange={(e) => setCustomerData({...customerData, taxId: e.target.value})}
-                          />
-                        </div>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                          <Input 
-                            type="email"
-                            placeholder="Email" 
-                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold"
-                            value={customerData.email}
-                            onChange={(e) => setCustomerData({...customerData, email: e.target.value.toLowerCase()})}
-                          />
-                        </div>
-                        <div className="col-span-2 relative">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-300" />
-                          <Input 
-                            placeholder="Dirección Fiscal" 
-                            className="h-9 pl-9 rounded-lg bg-white border-slate-100 text-[10px] font-bold uppercase"
-                            value={customerData.address}
-                            onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
-                          />
-                        </div>
-                      </div>
+                ) : filteredMenu.map(item => (
+                  <Card 
+                    key={item.id} 
+                    className={cn(
+                      "rounded-xl border-none shadow-md hover:shadow-xl transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
+                      !item.available && "opacity-50 grayscale"
                     )}
-                  </div>
-
-                  <div ref={paymentSectionRef} className="p-4 space-y-4">
-                    {/* Propina */}
-                    <div>
-                      <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest text-center mb-2">Propina</p>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {[0, 2000, 5000, 10000].map(amt => (
-                          <button key={amt} onClick={() => { setTipAmount(amt); setCustomTip("") }}
-                            className={cn("h-8 rounded-lg text-[8px] font-black border transition-all", tipAmount === amt && !customTip ? "bg-amber-500 text-white border-amber-600" : "bg-white text-slate-500 border-slate-100")}>
-                            {amt === 0 ? 'Sin' : `$${(amt/1000)}k`}
-                          </button>
-                        ))}
-                        <input type="number" placeholder="Otro" value={customTip}
-                          onChange={e => { setCustomTip(e.target.value); setTipAmount(Number(e.target.value) || 0) }}
-                          className="h-8 rounded-lg text-[8px] font-bold text-center bg-white border border-slate-100 w-full" />
-                      </div>
-                    </div>
-
-                    {/* Pago Mixto Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                      <span className="text-[8px] font-black uppercase text-slate-500">Pago Mixto</span>
-                      <button onClick={() => setIsSplitPayment(!isSplitPayment)}
-                        className={cn("h-6 w-11 rounded-full transition-all flex items-center px-1", isSplitPayment ? "bg-primary justify-end" : "bg-slate-200 justify-start")}>
-                        <div className="h-4 w-4 rounded-full bg-white shadow" />
-                      </button>
-                    </div>
-
-                    {isSplitPayment ? (
-                      <div className="space-y-3">
-                        <p className="text-[8px] font-black uppercase text-slate-400 text-center">Parte 1</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {['Efectivo', 'Datafono', 'Nequi'].map(m => (
-                            <button key={m} onClick={() => setSplitMethod1(m as any)}
-                              className={cn("flex items-center justify-center h-9 rounded-lg gap-1 border-2 text-[7px] font-black uppercase transition-all", splitMethod1 === m ? "border-slate-900 bg-slate-900 text-white" : "border-slate-100 text-slate-400")}>
-                              {m}
-                            </button>
-                          ))}
-                        </div>
-                        <Input type="number" value={splitAmount1} onChange={e => setSplitAmount1(e.target.value)}
-                          placeholder="Monto parte 1" className="h-10 rounded-xl bg-slate-50 border-slate-100 text-center font-black" />
-                        <div className="flex justify-between text-[9px] font-bold text-slate-500 px-2">
-                          <span>Parte 2 ({splitMethod2}):</span>
-                          <span className="font-black text-slate-900">{formatCurrencyDetailed(currentTotal + tipAmount - (Number(splitAmount1) || 0))}</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {['Efectivo', 'Datafono', 'Nequi'].map(m => (
-                            <button key={m} onClick={() => setSplitMethod2(m as any)}
-                              className={cn("flex items-center justify-center h-7 rounded-lg gap-1 border-2 text-[6px] font-black uppercase transition-all", splitMethod2 === m ? "border-slate-900 bg-slate-100 text-slate-900" : "border-slate-100 text-slate-400")}>
-                              {m}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="text-[8px] font-black uppercase text-slate-400 tracking-widest text-center">Método de Recaudo</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-                            { id: 'Efectivo', icon: Banknote, color: 'bg-emerald-500' },
-                            { id: 'Datafono', icon: CreditCard, color: 'bg-blue-500' },
-                            { id: 'Nequi', icon: Smartphone, color: 'bg-purple-500' }
-                          ].map(m => (
-                            <button key={m.id} onClick={() => setPaymentMethod(m.id as any)}
-                              className={cn("flex flex-col items-center justify-center h-12 rounded-xl gap-1 border-2 transition-all active:scale-90",
-                                paymentMethod === m.id ? `border-slate-900 ${m.color} text-white shadow-lg` : "bg-white text-slate-400 border-slate-100")}>
-                              <m.icon className="h-3 w-3" />
-                              <span className="font-black text-[7px] uppercase tracking-tighter">{m.id}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {(!isSplitPayment && paymentMethod === 'Efectivo') && (
-                    <div className="p-4 space-y-3 bg-emerald-50/30 border-y border-emerald-100">
-                      <div className="grid grid-cols-4 gap-1.5">
-                        {[10000, 20000, 50000, 100000].map(amt => (
-                          <Button key={amt} variant="outline" className="h-8 bg-white border-emerald-100 rounded-md text-[8px] font-black text-emerald-600 p-0" onClick={() => setCashAmount(amt)}>
-                            ${(amt/1000)}k
-                          </Button>
-                        ))}
-                      </div>
-                      {cashReceived > 0 && (
-                        <div className="flex justify-between items-center pt-1.5 border-t border-emerald-100">
-                          <span className="text-[8px] font-black uppercase text-slate-400">Vuelto:</span>
-                          <span className="text-sm font-black text-emerald-600">{formatCurrencyDetailed(Math.max(0, cashReceived - currentTotal))}</span>
+                    onClick={() => addToDirectCart(item)}
+                  >
+                    <div className="aspect-square relative overflow-hidden bg-slate-100">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300" alt={item.name} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Utensils className="h-8 w-8 text-slate-200" />
                         </div>
                       )}
                     </div>
-                  )}
-                </>
+                    <CardContent className="p-2">
+                      <p className="font-black text-[8px] text-slate-800 uppercase truncate">{item.name}</p>
+                      <p className="text-[9px] font-black text-primary mt-0.5">{formatCurrencyDetailed(item.price)}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </ScrollArea>
+      </div>
+
+      {/* PANEL DERECHO: Checkout Permanente (25%) */}
+      <div className="w-1/4 min-w-[300px] max-w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl">
+        <CardHeader className="bg-slate-900 text-white shrink-0">
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-sm font-black uppercase tracking-tighter">
+                {directCart.length > 0 ? "Venta Rápida" : selectedOrder ? `Mesa ${selectedOrder.tableNumber}` : "Comanda"}
+              </CardTitle>
+              <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{effectiveVenueName}</p>
+            </div>
+            {(directCart.length > 0 || selectedOrder) && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800"
+                onClick={() => { setSelectedOrder(null); setDirectCart([]) }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="flex-1 p-0 overflow-hidden flex flex-col bg-slate-50">
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-3">
+              {(directCart.length === 0 && !selectedOrder) ? (
+                <div className="py-16 text-center opacity-30">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-4" />
+                  <p className="font-black uppercase text-[9px]">Agrega productos</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(directCart.length > 0 ? directCart : (selectedOrder?.items || [])).map((item: any) => (
+                    <div key={item.id} className="flex items-center justify-between bg-white p-3 rounded-xl shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => {
+                              if (directCart.length > 0) {
+                                setDirectCart(prev => prev.map(i => i.id === item.id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i))
+                              }
+                            }}
+                            className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center"
+                          >
+                            <Minus className="h-3 w-3 text-slate-500" />
+                          </button>
+                          <span className="w-6 text-center text-[10px] font-black">{item.quantity}</span>
+                          <button 
+                            onClick={() => {
+                              if (directCart.length > 0) {
+                                setDirectCart(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i))
+                              }
+                            }}
+                            className="h-6 w-6 rounded bg-slate-100 flex items-center justify-center"
+                          >
+                            <Plus className="h-3 w-3 text-slate-500" />
+                          </button>
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-700 uppercase truncate max-w-[120px]">{item.name}</span>
+                      </div>
+                      <span className="text-[10px] font-black text-slate-900">{formatCurrencyDetailed(item.price * item.quantity)}</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </ScrollArea>
         </CardContent>
 
-        <CardFooter className="p-4 bg-white border-t flex flex-col gap-4 shrink-0">
-          <div className="w-full space-y-1">
-            <div className="flex justify-between items-end">
-              <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Subtotal</span>
-              <span className="text-lg font-black text-slate-400">{formatCurrencyDetailed(currentTotal)}</span>
+        <CardFooter className="p-4 bg-white border-t space-y-4 shrink-0">
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-[10px] font-black uppercase text-slate-400">Subtotal</span>
+              <span className="text-sm font-black text-slate-600">{formatCurrencyDetailed(currentTotal)}</span>
             </div>
-            {tipAmount > 0 && (
-              <div className="flex justify-between items-end">
-                <span className="text-[9px] font-black uppercase text-amber-500 tracking-widest">Propina</span>
-                <span className="text-sm font-black text-amber-600">+{formatCurrencyDetailed(tipAmount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-end border-t pt-2">
-              <span className="text-[9px] font-black uppercase text-slate-900 tracking-widest">Total a Cobrar</span>
-              <span className="text-2xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(currentTotal + tipAmount)}</span>
+            <div className="flex justify-between">
+              <span className="text-[10px] font-black uppercase text-slate-400">IVA (15%)</span>
+              <span className="text-sm font-black text-slate-600">{formatCurrencyDetailed(currentTotal * 0.15)}</span>
+            </div>
+            <div className="flex justify-between pt-2 border-t">
+              <span className="text-xs font-black uppercase text-slate-900">Total</span>
+              <span className="text-xl font-black text-primary">{formatCurrencyDetailed(currentTotal * 1.15)}</span>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 w-full">
-            <Button 
-              className="col-span-3 h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:bg-slate-100 disabled:text-slate-300"
-              disabled={currentTotal === 0 || isFinishing}
-              onClick={handleFinalizeInvoice}
-            >
-              {isFinishing ? <Loader2 className="animate-spin h-6 w-6" /> : <><CheckCircle2 className="mr-2 h-5 w-5" /> {isElectronic ? "Emitir Electrónica" : "Cobrar"}</>}
-            </Button>
-            <Button 
-              variant="outline"
-              className="h-14 border-slate-100 rounded-xl hover:bg-slate-50 transition-all group p-0 flex items-center justify-center"
-              disabled={currentTotal === 0}
-              onClick={() => toast({ title: "Ticket Fiscal", description: "Imprimiendo copia..." })}
-            >
-              <Printer className="h-6 w-6 text-slate-300 group-hover:text-primary" />
-            </Button>
-          </div>
+          
+          <Button 
+            className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20"
+            disabled={currentTotal === 0 || isFinishing}
+            onClick={handleFinalizeInvoice}
+          >
+            {isFinishing ? <Loader2 className="animate-spin h-5 w-5" /> : "Proceder al Pago"}
+          </Button>
         </CardFooter>
-      </Card>
+      </div>
 
       {/* Cierre de Caja Dialog */}
       <Dialog open={showCierreCaja} onOpenChange={setShowCierreCaja}>
