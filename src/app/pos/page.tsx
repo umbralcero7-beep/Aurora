@@ -548,20 +548,13 @@ export default function POSPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Button 
               variant="outline" 
-              className="h-8 md:h-9 px-2 md:px-4 rounded-lg md:rounded-xl border-secondary text-secondary font-black text-[6px] md:text-[8px] uppercase tracking-widest hover:bg-secondary hover:text-white transition-all"
-              onClick={openCierreCaja}
+              className="h-8 md:h-9 px-2 md:px-3 rounded-lg md:rounded-xl border-primary/30 text-primary font-black text-[6px] md:text-[7px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
+              onClick={() => setIsElectronic(!isElectronic)}
             >
-              <Lock className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden sm:inline">Cierre de Caja</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-8 md:h-9 px-2 md:px-4 rounded-lg md:rounded-xl border-primary text-primary font-black text-[6px] md:text-[8px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all"
-              onClick={() => router.push('/fiscal-control')}
-            >
-              <ShieldCheck className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden sm:inline">Cierre Fiscal (Z)</span>
+              <FileText className="mr-1 md:mr-2 h-3 w-3" /> <span className="hidden sm:inline">{isElectronic ? 'Electrónica' : 'POS'}</span>
             </Button>
             <Badge variant="outline" className="text-[6px] md:text-[7px] font-black uppercase border-primary/20 text-primary hidden sm:flex">{effectiveVenueName}</Badge>
           </div>
