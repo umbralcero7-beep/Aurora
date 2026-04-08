@@ -93,6 +93,7 @@ export default function POSPage() {
   const [showCheckoutMobile, setShowCheckoutMobile] = useState(false)
   const [cashReceived, setCashAmount] = useState<number>(0)
   const [activeCategory, setActiveCategory] = useState("Todos")
+  const [currentTime, setCurrentTime] = useState(Date.now())
 
   // Pago mixto y propina
   const [isSplitPayment, setIsSplitPayment] = useState(false)
@@ -127,6 +128,14 @@ export default function POSPage() {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Update time every minute for table timers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 60000) // Update every minute
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -649,22 +658,33 @@ export default function POSPage() {
                 {tables.map(num => {
                   const order = tableData[num]
                   const status = !order ? 'free' : (order.status === 'Ready' ? 'ready' : 'occupied')
+                  const elapsedMin = order?.createdAt ? Math.floor((currentTime - new Date(order.createdAt).getTime()) / 60000) : 0
+                  const isUrgent = elapsedMin > 20
                   return (
                     <Card 
                       key={num} 
                       className={cn(
-                        "rounded-2xl border-2 transition-all cursor-pointer h-24 flex flex-col justify-center items-center gap-2 group active:scale-95",
+                        "rounded-2xl border-2 transition-all cursor-pointer h-28 flex flex-col justify-center gap-1 group active:scale-95 relative",
                         status === 'free' ? "bg-white border-slate-200 hover:border-slate-300" : 
                         status === 'ready' ? "bg-amber-50 border-amber-400 shadow-lg" : 
+                        isUrgent ? "bg-red-50 border-red-400 shadow-lg animate-pulse" :
                         "bg-blue-50 border-blue-400 shadow-lg",
                         selectedOrder?.tableNumber === num ? "ring-4 ring-primary/30 border-primary" : ""
                       )}
                       onClick={() => status !== 'free' && selectOrder(order)}
                     >
+                      {status !== 'free' && elapsedMin > 0 && (
+                        <div className={cn(
+                          "absolute -top-1 -right-1 px-2 py-0.5 rounded-full text-[8px] font-black",
+                          isUrgent ? "bg-red-500 text-white" : "bg-slate-900 text-white"
+                        )}>
+                          {elapsedMin}m
+                        </div>
+                      )}
                       <div className={cn(
                         "h-12 w-12 rounded-full flex items-center justify-center text-lg font-black",
                         status === 'free' ? "bg-slate-100 text-slate-400" : 
-                        status === 'ready' ? "bg-amber-400 text-white" : "bg-blue-500 text-white"
+                        status === 'ready' ? "bg-amber-400 text-white" : isUrgent ? "bg-red-500 text-white" : "bg-blue-500 text-white"
                       )}>
                         {num}
                       </div>
