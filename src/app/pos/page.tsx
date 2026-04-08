@@ -844,27 +844,17 @@ export default function POSPage() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-[10px] font-black uppercase text-slate-400">Subtotal</span>
-              <span className="text-sm font-black text-slate-600">{formatCurrencyDetailed(currentTotal)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[10px] font-black uppercase text-slate-400">IVA (15%)</span>
-              <span className="text-sm font-black text-slate-600">{formatCurrencyDetailed(currentTotal * 0.15)}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t">
-              <span className="text-xs font-black uppercase text-slate-900">Total</span>
-              <span className="text-xl font-black text-primary">{formatCurrencyDetailed(currentTotal * 1.15)}</span>
-            </div>
+          <div className="flex justify-between items-center pt-2 border-t">
+            <span className="text-sm font-black uppercase text-slate-900">Total a Pagar</span>
+            <span className="text-2xl font-black text-primary">{formatCurrencyDetailed(currentTotal * 1.15)}</span>
           </div>
           
           <Button 
-            className="w-full h-14 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20"
             disabled={currentTotal === 0 || isFinishing || (isElectronic && (!customerData.name || !customerData.taxId))}
             onClick={handleFinalizeInvoice}
           >
-            {isFinishing ? <Loader2 className="animate-spin h-5 w-5" /> : "Proceder al Pago"}
+            {isFinishing ? <Loader2 className="animate-spin h-5 w-5" /> : "Cobrar"}
           </Button>
         </CardFooter>
       </div>
