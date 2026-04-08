@@ -696,21 +696,33 @@ export default function POSPage() {
         "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl z-30 min-h-0",
         showCheckoutMobile ? "fixed inset-0 h-full w-full bg-slate-50" : "hidden lg:flex bg-white"
       )}>
-        <CardHeader className="bg-slate-900 text-white p-4 flex flex-row justify-between items-center shrink-0">
+        <CardHeader className="bg-slate-900 text-white p-3 md:p-4 flex flex-row justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" className="lg:hidden h-8 w-8 text-white/70 p-0 mr-1" onClick={() => setShowCheckoutMobile(false)}>
-              <ArrowLeftRight className="h-4 w-4" />
+            <Button variant="ghost" className="h-7 w-7 md:h-8 md:w-8 text-white/70 p-0 mr-1" onClick={() => {
+              setShowCheckoutMobile(false)
+              if (selectedOrder) {
+                setSelectedOrder(null)
+                setDirectCart([])
+              }
+            }}>
+              <ArrowLeftRight className="h-3.5 md:h-4 w-3.5 md:w-4" />
             </Button>
-            <Receipt className="h-5 w-5 text-primary" />
+            <Receipt className="h-4 md:h-5 w-4 md:w-5 text-primary" />
             <div>
-              <CardTitle className="text-sm font-black uppercase tracking-tighter">
+              <CardTitle className="text-xs md:text-sm font-black uppercase tracking-tighter">
                 {directCart.length > 0 ? "Venta Rápida" : `Mesa ${selectedOrder?.tableNumber || '?'}`}
               </CardTitle>
-              <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest italic">Cierre Fiscal</p>
+              <p className="text-[6px] md:text-[7px] font-black text-slate-400 uppercase tracking-widest italic">Cierre Fiscal</p>
             </div>
           </div>
-          <Button variant="ghost" className="lg:hidden text-white/70 font-black text-[8px] uppercase tracking-widest h-8 px-3 gap-1" onClick={() => setShowCheckoutMobile(false)}>
-            <Plus className="h-3 w-3" /> Menú
+          <Button variant="ghost" className="text-white/70 font-black text-[7px] md:text-[8px] uppercase tracking-widest h-7 md:h-8 px-2 md:px-3 gap-1" onClick={() => {
+            setShowCheckoutMobile(false)
+            if (selectedOrder) {
+              setSelectedOrder(null)
+              setDirectCart([])
+            }
+          }}>
+            <ArrowRight className="h-3 md:h-3.5 w-3 md:w-3.5" /> <span className="hidden sm:inline">Volver</span>
           </Button>
         </CardHeader>
 
