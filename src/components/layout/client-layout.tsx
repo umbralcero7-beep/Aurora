@@ -46,12 +46,12 @@ function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="h-6 w-6 md:h-7 md:w-7 bg-slate-100/50 hover:bg-white rounded-md flex items-center justify-center transition-all border border-slate-200/50"
+      className="h-6 w-6 md:h-7 md:w-7 bg-muted hover:bg-accent rounded-md flex items-center justify-center transition-all border border-border"
     >
       {theme === 'dark' ? (
-        <Moon className="h-3 w-3.5 text-slate-500" />
+        <Moon className="h-3 w-3.5 text-foreground" />
       ) : (
-        <Sun className="h-3 w-3.5 text-slate-500" />
+        <Sun className="h-3 w-3.5 text-foreground" />
       )}
     </button>
   );
