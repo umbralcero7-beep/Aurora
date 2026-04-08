@@ -39,7 +39,8 @@ import {
   TrendingUp,
   AlertTriangle,
   Download,
-  PenLine
+  PenLine,
+  PlusCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -94,6 +95,9 @@ export default function POSPage() {
   const [cashReceived, setCashAmount] = useState<number>(0)
   const [activeCategory, setActiveCategory] = useState("Todos")
   const [currentTime, setCurrentTime] = useState(Date.now())
+  const [tables, setTables] = useState<string[]>(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"])
+  const [showAddTable, setShowAddTable] = useState(false)
+  const [newTableNumber, setNewTableNumber] = useState("")
 
   // Pago mixto y propina
   const [isSplitPayment, setIsSplitPayment] = useState(false)
@@ -252,12 +256,39 @@ export default function POSPage() {
     return matchesSearch && matchesCategory
   })
 
-  const tables = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
   const tableData = useMemo(() => {
     const map: Record<string, any> = {}
     activeOrders.forEach(order => { map[order.tableNumber] = order })
     return map
   }, [activeOrders])
+
+  const handleAddTable = () => {
+    const num = newTableNumber.trim()
+    if (!num) {
+      toast({ variant: "destructive", title: "Error", description: "Ingresa un número de mesa" })
+      return
+    }
+    if (tables.includes(num)) {
+      toast({ variant: "destructive", title: "Error", description: "La mesa ya existe" })
+      return
+    }
+    setTables(prev => [...prev, num].sort((a, b) => Number(a) - Number(b)))
+    setNewTableNumber("")
+    setShowAddTable(false)
+    toast({ title: "Mesa agregada", description: `Mesa ${num} añadida` })
+  }
+
+  const handleRemoveTable = (num: string) => {
+    const hasOrder = tableData[num]
+    if (hasOrder) {
+      toast({ variant: "destructive", title: "Error", description: "No puedes eliminar una mesa con orden activa" })
+      return
+    }
+    setTables(prev => prev.filter(t => t !== num))
+    toast({ title: "Mesa eliminada", description: `Mesa ${num} eliminada` })
+  }
+
+  const isAdmin = profile?.role === 'ADMIN' || isSuper
 
   const addToDirectCart = (item: any) => {
     if (item.available === false) {
@@ -652,6 +683,18 @@ export default function POSPage() {
         <div className="flex-1 overflow-y-auto p-3">
           <Tabs value={activeTab} className="h-full">
             <TabsContent value="tables" className="m-0 animate-in fade-in duration-300">
+              {isAdmin && (
+                <div className="mb-3 flex justify-end">
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddTable(true)}
+                    className="h-8 text-[8px] font-black uppercase rounded-lg"
+                  >
+                    <PlusCircle className="h-3 w-3 mr-1" /> Agregar Mesa
+                  </Button>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2">
                 {tables.map(num => {
                   const order = tableData[num]
@@ -662,15 +705,23 @@ export default function POSPage() {
                     <Card 
                       key={num} 
                       className={cn(
-                        "rounded-xl border-2 transition-all cursor-pointer h-20 flex flex-col justify-center gap-1 group active:scale-95 relative",
-                        status === 'free' ? "bg-white border-slate-200 hover:border-slate-300" : 
-                        status === 'ready' ? "bg-amber-50 border-amber-400 shadow-md" : 
-                        isUrgent ? "bg-red-50 border-red-400 shadow-md animate-pulse" :
-                        "bg-blue-50 border-blue-400 shadow-md",
+                        "rounded-xl border-2 transition-all h-20 flex flex-col items-center justify-center gap-1 group relative",
+                        status === 'free' ? "bg-white border-slate-200" : 
+                        status === 'ready' ? "bg-amber-50 border-amber-400 shadow-md cursor-pointer hover:scale-105" : 
+                        isUrgent ? "bg-red-50 border-red-400 shadow-md animate-pulse cursor-pointer hover:scale-105" :
+                        "bg-blue-50 border-blue-400 shadow-md cursor-pointer hover:scale-105",
                         selectedOrder?.tableNumber === num ? "ring-2 ring-primary/30 border-primary" : ""
                       )}
                       onClick={() => status !== 'free' && selectOrder(order)}
                     >
+                      {isAdmin && status === 'free' && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleRemoveTable(num) }}
+                          className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-2 w-2 text-white" />
+                        </button>
+                      )}
                       {status !== 'free' && elapsedMin > 0 && (
                         <div className={cn(
                           "absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[6px] font-black",
@@ -680,13 +731,13 @@ export default function POSPage() {
                         </div>
                       )}
                       <div className={cn(
-                        "h-8 w-8 rounded-full flex items-center justify-center text-xs font-black",
+                        "h-10 w-10 rounded-full flex items-center justify-center text-sm font-black",
                         status === 'free' ? "bg-slate-100 text-slate-400" : 
                         status === 'ready' ? "bg-amber-400 text-white" : isUrgent ? "bg-red-500 text-white" : "bg-blue-500 text-white"
                       )}>
                         {num}
                       </div>
-                      <span className={cn("text-[6px] font-black uppercase tracking-wider", 
+                      <span className={cn("text-[7px] font-black uppercase tracking-wider text-center", 
                         status === 'free' ? "text-slate-300" : status === 'ready' ? "text-amber-600" : "text-blue-600"
                       )}>
                         {status === 'free' ? 'Libre' : status === 'ready' ? 'Lista' : 'Ocup'}
@@ -1014,6 +1065,32 @@ export default function POSPage() {
               }
             }}>
               Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Table Dialog - Admin Only */}
+      <Dialog open={showAddTable} onOpenChange={setShowAddTable}>
+        <DialogContent className="max-w-sm rounded-2xl p-6 bg-white border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black uppercase">Agregar Mesa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input 
+              placeholder="Número de mesa (ej: 13)"
+              value={newTableNumber}
+              onChange={(e) => setNewTableNumber(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddTable()}
+              className="h-12 rounded-xl font-black text-center text-lg"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1 h-12 rounded-xl font-black text-xs uppercase" onClick={() => { setShowAddTable(false); setNewTableNumber("") }}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 h-12 rounded-xl font-black text-xs uppercase bg-primary hover:bg-primary/90" onClick={handleAddTable}>
+              Agregar
             </Button>
           </div>
         </DialogContent>
