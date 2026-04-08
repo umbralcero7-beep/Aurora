@@ -555,74 +555,66 @@ export default function POSPage() {
 
   return (
     <div className="flex h-[calc(100svh-2.5rem)] bg-slate-900 font-body overflow-hidden">
-      {/* PANEL IZQUIERDO: Control de Flujo (20%) */}
-      <div className="w-1/5 min-w-[200px] max-w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col">
+      {/* PANEL IZQUIERDO: Control + Menú Unificado (40%) */}
+      <div className="w-[40%] min-w-[320px] max-w-[480px] bg-slate-950 border-r border-slate-800 flex flex-col overflow-hidden">
         {/* Selector de Modo */}
-        <div className="p-4 border-b border-slate-800">
-          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Modo de Operación</h2>
-          <div className="flex flex-col gap-2">
+        <div className="p-3 border-b border-slate-800 shrink-0">
+          <div className="flex gap-2">
             <Button 
               variant={activeTab === 'tables' ? 'default' : 'ghost'}
               className={cn(
-                "h-14 justify-start px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
+                "flex-1 h-10 justify-center px-2 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all",
                 activeTab === 'tables' ? "bg-primary text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
               )}
               onClick={() => setActiveTab('tables')}
             >
-              <LayoutGrid className="mr-3 h-5 w-5" /> Mapeo Mesas
+              <LayoutGrid className="mr-2 h-4 w-4" /> Mesas
             </Button>
             <Button 
               variant={activeTab === 'direct' ? 'default' : 'ghost'}
               className={cn(
-                "h-14 justify-start px-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all",
+                "flex-1 h-10 justify-center px-2 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all",
                 activeTab === 'direct' ? "bg-primary text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
               )}
               onClick={() => setActiveTab('direct')}
             >
-              <ShoppingBag className="mr-3 h-5 w-5" /> Venta Rápida
+              <ShoppingBag className="mr-2 h-4 w-4" /> Venta
             </Button>
           </div>
         </div>
 
         {/* Estado del Sistema */}
-        <div className="p-4 border-b border-slate-800">
-          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Estado del Sistema</h2>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[9px] font-black text-slate-300 uppercase">DIAN</span>
-              </div>
-              <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[7px] font-black uppercase">Conectado</Badge>
+        <div className="px-3 py-2 border-b border-slate-800 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[8px] font-black text-slate-400 uppercase">DIAN</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-slate-900 rounded-lg">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                <span className="text-[9px] font-black text-slate-300 uppercase">Caja</span>
-              </div>
-              <span className="text-[9px] font-black text-blue-400">Abierta</span>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+              <span className="text-[8px] font-black text-slate-400 uppercase">Caja</span>
+              <span className="text-[7px] font-black text-blue-400">Abierta</span>
             </div>
           </div>
         </div>
 
         {/* Buscador Global */}
-        <div className="p-4 flex-1">
-          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Buscar Producto</h2>
+        <div className="p-3 border-b border-slate-800 shrink-0">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500" />
             <Input 
-              placeholder="Código o nombre..." 
-              className="pl-10 h-12 bg-slate-900 border-slate-700 text-slate-200 font-bold text-xs placeholder:text-slate-600 rounded-xl"
+              placeholder="Buscar producto..." 
+              className="pl-9 h-10 bg-slate-900 border-slate-700 text-slate-200 font-bold text-xs placeholder:text-slate-600 rounded-lg"
               value={menuSearch}
               onChange={(e) => setMenuSearch(e.target.value)}
             />
           </div>
           {menuSearch && filteredMenu.length > 0 && (
-            <div className="mt-2 bg-slate-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-              {filteredMenu.slice(0, 5).map(item => (
+            <div className="mt-2 bg-slate-800 rounded-lg overflow-hidden max-h-32 overflow-y-auto">
+              {filteredMenu.slice(0, 4).map(item => (
                 <button 
                   key={item.id} 
-                  className="w-full p-3 flex items-center justify-between hover:bg-slate-700 border-b border-slate-700 last:border-0"
+                  className="w-full p-2 flex items-center justify-between hover:bg-slate-700 border-b border-slate-700 last:border-0"
                   onClick={() => { 
                     setSelectedProductForModifier(item)
                     setSelectedModifiers([])
@@ -639,15 +631,14 @@ export default function POSPage() {
         </div>
 
         {/* Categorías */}
-        <div className="p-4 border-t border-slate-800">
-          <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-3">Categorías</h2>
-          <div className="flex flex-wrap gap-2">
+        <div className="px-3 py-2 border-b border-slate-800 shrink-0">
+          <div className="flex flex-wrap gap-1.5">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-3 py-2 rounded-lg text-[8px] font-black uppercase transition-all",
+                  "px-2 py-1.5 rounded-md text-[7px] font-black uppercase transition-all",
                   activeCategory === cat ? "bg-primary text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
                 )}
               >
@@ -656,14 +647,12 @@ export default function POSPage() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* PANEL CENTRAL: Área Dinámica (55%) */}
-      <div className="flex-1 bg-slate-50 overflow-hidden flex flex-col">
-        <ScrollArea className="flex-1">
+        {/* Área de Contenido: Mesas o Productos */}
+        <div className="flex-1 overflow-y-auto p-3">
           <Tabs value={activeTab} className="h-full">
-            <TabsContent value="tables" className="m-0 p-4 animate-in fade-in duration-300">
-              <div className="grid grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <TabsContent value="tables" className="m-0 animate-in fade-in duration-300">
+              <div className="grid grid-cols-3 gap-2">
                 {tables.map(num => {
                   const order = tableData[num]
                   const status = !order ? 'free' : (order.status === 'Ready' ? 'ready' : 'occupied')
@@ -673,34 +662,34 @@ export default function POSPage() {
                     <Card 
                       key={num} 
                       className={cn(
-                        "rounded-2xl border-2 transition-all cursor-pointer h-28 flex flex-col justify-center gap-1 group active:scale-95 relative",
+                        "rounded-xl border-2 transition-all cursor-pointer h-20 flex flex-col justify-center gap-1 group active:scale-95 relative",
                         status === 'free' ? "bg-white border-slate-200 hover:border-slate-300" : 
-                        status === 'ready' ? "bg-amber-50 border-amber-400 shadow-lg" : 
-                        isUrgent ? "bg-red-50 border-red-400 shadow-lg animate-pulse" :
-                        "bg-blue-50 border-blue-400 shadow-lg",
-                        selectedOrder?.tableNumber === num ? "ring-4 ring-primary/30 border-primary" : ""
+                        status === 'ready' ? "bg-amber-50 border-amber-400 shadow-md" : 
+                        isUrgent ? "bg-red-50 border-red-400 shadow-md animate-pulse" :
+                        "bg-blue-50 border-blue-400 shadow-md",
+                        selectedOrder?.tableNumber === num ? "ring-2 ring-primary/30 border-primary" : ""
                       )}
                       onClick={() => status !== 'free' && selectOrder(order)}
                     >
                       {status !== 'free' && elapsedMin > 0 && (
                         <div className={cn(
-                          "absolute -top-1 -right-1 px-2 py-0.5 rounded-full text-[8px] font-black",
+                          "absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[6px] font-black",
                           isUrgent ? "bg-red-500 text-white" : "bg-slate-900 text-white"
                         )}>
                           {elapsedMin}m
                         </div>
                       )}
                       <div className={cn(
-                        "h-12 w-12 rounded-full flex items-center justify-center text-lg font-black",
+                        "h-8 w-8 rounded-full flex items-center justify-center text-xs font-black",
                         status === 'free' ? "bg-slate-100 text-slate-400" : 
                         status === 'ready' ? "bg-amber-400 text-white" : isUrgent ? "bg-red-500 text-white" : "bg-blue-500 text-white"
                       )}>
                         {num}
                       </div>
-                      <span className={cn("text-[8px] font-black uppercase tracking-widest", 
+                      <span className={cn("text-[6px] font-black uppercase tracking-wider", 
                         status === 'free' ? "text-slate-300" : status === 'ready' ? "text-amber-600" : "text-blue-600"
                       )}>
-                        {status === 'free' ? 'Libre' : status === 'ready' ? 'Lista' : 'Ocupada'}
+                        {status === 'free' ? 'Libre' : status === 'ready' ? 'Lista' : 'Ocup'}
                       </span>
                     </Card>
                   )
@@ -708,17 +697,17 @@ export default function POSPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="direct" className="m-0 p-4 animate-in fade-in duration-300">
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <TabsContent value="direct" className="m-0 animate-in fade-in duration-300">
+              <div className="grid grid-cols-3 gap-2">
                 {menuLoading ? (
-                  <div className="col-span-full py-20 text-center">
-                    <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary opacity-50" />
+                  <div className="col-span-full py-10 text-center">
+                    <Loader2 className="h-6 w-6 mx-auto animate-spin text-primary opacity-50" />
                   </div>
                 ) : filteredMenu.map(item => (
                   <Card 
                     key={item.id} 
                     className={cn(
-                      "rounded-xl border-none shadow-md hover:shadow-xl transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
+                      "rounded-xl border-none shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-95 overflow-hidden bg-white",
                       !item.available && "opacity-50 grayscale"
                     )}
                     onClick={() => {
@@ -734,24 +723,24 @@ export default function POSPage() {
                         <img src={item.imageUrl} className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300" alt={item.name} />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Utensils className="h-8 w-8 text-slate-200" />
+                          <Utensils className="h-6 w-6 text-slate-200" />
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-2">
-                      <p className="font-black text-[8px] text-slate-800 uppercase truncate">{item.name}</p>
-                      <p className="text-[9px] font-black text-primary mt-0.5">{formatCurrencyDetailed(item.price)}</p>
+                    <CardContent className="p-1.5">
+                      <p className="font-black text-[7px] text-slate-800 uppercase truncate">{item.name}</p>
+                      <p className="text-[8px] font-black text-primary mt-0.5">{formatCurrencyDetailed(item.price)}</p>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             </TabsContent>
           </Tabs>
-        </ScrollArea>
+        </div>
       </div>
 
-      {/* PANEL DERECHO: Checkout Permanente (25%) */}
-      <div className="w-1/4 min-w-[300px] max-w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl">
+      {/* PANEL DERECHO: Checkout (60%) */}
+      <div className="flex-1 bg-white border-l border-slate-200 flex flex-col shadow-2xl">
         <CardHeader className="bg-slate-900 text-white shrink-0">
           <div className="flex justify-between items-center">
             <div>
