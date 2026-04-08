@@ -30,15 +30,6 @@ import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@
 import { collection, query, orderBy, limit, where, doc } from "firebase/firestore"
 import { formatCurrencyDetailed, cn } from "@/lib/utils"
 
-// Carta Aurora Precargada para Respaldo Demo
-const DEFAULT_MENU = [
-  { id: 'p1', name: 'Hamburguesa Aurora', price: 35000, category: 'Platos Fuertes', available: true, description: 'Carne Angus 200g, queso azul, cebolla caramelizada y pan brioche.', imageUrl: 'https://picsum.photos/seed/aurora_h1/600/400' },
-  { id: 'p2', name: 'Empanadas de Carne (3)', price: 15000, category: 'Entradas', available: true, description: 'Crujientes empanadas tradicionales con ají de la casa.', imageUrl: 'https://picsum.photos/seed/aurora_e1/600/400' },
-  { id: 'p3', name: 'Limonada de Coco', price: 12000, category: 'Bebidas', available: true, description: 'Refrescante mezcla de limón y crema de coco natural.', imageUrl: 'https://picsum.photos/seed/aurora_l1/600/400' },
-  { id: 'p4', name: 'Cerveza Club Colombia', price: 10000, category: 'Bebidas', available: true, description: 'Cerveza nacional tipo Lager.', imageUrl: 'https://picsum.photos/seed/aurora_b1/600/400' },
-  { id: 'p5', name: 'Torta de Chocolate', price: 14000, category: 'Postres', available: true, description: 'Húmeda y deliciosa con fudge de chocolate 70% cacao.', imageUrl: 'https://picsum.photos/seed/aurora_c1/600/400' },
-]
-
 export default function MenuPage() {
   const { t } = useLanguage()
   const db = useFirestore()
@@ -79,10 +70,7 @@ export default function MenuPage() {
 
   const { data: menuItems, isLoading } = useCollection(menuRef)
 
-  // Lógica de Mezcla: Usar precargada si el restaurante está vacío
-  const activeMenu = (menuItems && menuItems.length > 0) ? menuItems : DEFAULT_MENU;
-
-  const filteredMenu = activeMenu.filter(item => {
+  const filteredMenu = (menuItems || []).filter(item => {
     const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          item.description?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = activeCategory === "Todos" || item.category === activeCategory
@@ -95,9 +83,6 @@ export default function MenuPage() {
         <div>
           <div className="flex items-center gap-2 md:gap-3">
             <h1 className="text-xl md:text-2xl font-black tracking-tighter text-slate-900 uppercase">La Carta • {effectiveVenueName}</h1>
-            {(!menuItems || menuItems.length === 0) && (
-              <Badge className="bg-primary/10 text-primary border-none font-black text-[7px] md:text-[8px] tracking-[0.2em] uppercase px-2 md:px-3 py-0.5 md:py-1">Carta Precargada</Badge>
-            )}
           </div>
           <p className="text-[9px] md:text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic hidden md:block">
             {isSupport ? 'Soberanía Global: Gestión centralizada de platos.' : 'Consulta visual de platos y disponibilidad en tiempo real.'}

@@ -54,14 +54,6 @@ import { es, enUS } from "date-fns/locale"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
-const DEFAULT_MENU = [
-  { id: 'p1', name: 'Hamburguesa Aurora', price: 35000, category: 'Platos Fuertes', available: true },
-  { id: 'p2', name: 'Empanadas de Carne (3)', price: 15000, category: 'Entradas', available: true },
-  { id: 'p3', name: 'Limonada de Coco', price: 12000, category: 'Bebidas', available: true },
-  { id: 'p4', name: 'Cerveza Club Colombia', price: 10000, category: 'Bebidas', available: true },
-  { id: 'p5', name: 'Torta de Chocolate', price: 14000, category: 'Postres', available: true },
-]
-
 interface DeliveryItem {
   id: string
   name: string
@@ -203,7 +195,7 @@ export default function DeliveriesPage() {
     return () => clearTimeout(timer)
   }, [deliveryData.phone, db, effectiveBusinessId, toast])
 
-  const activeMenu = (menuItems && menuItems.length > 0) ? menuItems : DEFAULT_MENU;
+  const activeMenu = menuItems || [];
 
   const filteredMenuItems = useMemo(() => {
     if (!menuSearch) return []

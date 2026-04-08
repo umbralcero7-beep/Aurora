@@ -68,15 +68,6 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import * as XLSX from 'xlsx'
 
-// Carta Aurora Precargada para Respaldo Demo
-const DEFAULT_MENU = [
-  { id: 'p1', name: 'Hamburguesa Aurora', price: 35000, category: 'Platos Fuertes', available: true, imageUrl: 'https://picsum.photos/seed/aurora_h1/200/200' },
-  { id: 'p2', name: 'Empanadas de Carne (3)', price: 15000, category: 'Entradas', available: true, imageUrl: 'https://picsum.photos/seed/aurora_e1/200/200' },
-  { id: 'p3', name: 'Limonada de Coco', price: 12000, category: 'Bebidas', available: true, imageUrl: 'https://picsum.photos/seed/aurora_l1/200/200' },
-  { id: 'p4', name: 'Cerveza Club Colombia', price: 10000, category: 'Bebidas', available: true, imageUrl: 'https://picsum.photos/seed/aurora_b1/200/200' },
-  { id: 'p5', name: 'Torta de Chocolate', price: 14000, category: 'Postres', available: true, imageUrl: 'https://picsum.photos/seed/aurora_c1/200/200' },
-]
-
 interface CartItem {
   id: string
   name: string
@@ -230,7 +221,7 @@ export default function POSPage() {
     return allOrders.filter(o => ["Open", "Preparing", "Ready"].includes(o.status))
   }, [allOrders])
 
-  const activeMenu = (dbMenu && dbMenu.length > 0) ? dbMenu : DEFAULT_MENU;
+  const activeMenu = dbMenu || [];
 
   const filteredMenu = activeMenu.filter(item => {
     const matchesSearch = item.name?.toLowerCase().includes(menuSearch.toLowerCase())

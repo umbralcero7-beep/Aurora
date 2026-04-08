@@ -42,15 +42,6 @@ import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
-// Carta Aurora Precargada para Respaldo Demo
-const DEFAULT_MENU = [
-  { id: 'p1', name: 'Hamburguesa Aurora', price: 35000, category: 'Platos Fuertes', available: true, imageUrl: 'https://picsum.photos/seed/aurora_h1/400/400' },
-  { id: 'p2', name: 'Empanadas de Carne (3)', price: 15000, category: 'Entradas', available: true, imageUrl: 'https://picsum.photos/seed/aurora_e1/400/400' },
-  { id: 'p3', name: 'Limonada de Coco', price: 12000, category: 'Bebidas', available: true, imageUrl: 'https://picsum.photos/seed/aurora_l1/400/400' },
-  { id: 'p4', name: 'Cerveza Club Colombia', price: 10000, category: 'Bebidas', available: true, imageUrl: 'https://picsum.photos/seed/aurora_b1/400/400' },
-  { id: 'p5', name: 'Torta de Chocolate', price: 14000, category: 'Postres', available: true, imageUrl: 'https://picsum.photos/seed/aurora_c1/400/400' },
-]
-
 interface CartItem {
   id: string
   name: string
@@ -121,7 +112,7 @@ export default function ComandasPage() {
 
   const { data: menuItems, isLoading: menuLoading } = useCollection(menuQuery)
 
-  const activeMenu = (menuItems && menuItems.length > 0) ? menuItems : DEFAULT_MENU;
+  const activeMenu = menuItems || [];
 
   const filteredMenu = activeMenu
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
