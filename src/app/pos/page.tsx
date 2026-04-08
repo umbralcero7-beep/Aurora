@@ -531,10 +531,10 @@ export default function POSPage() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-12 h-[calc(100svh-2.5rem)] bg-white font-body overflow-hidden">
+    <div className="flex flex-col lg:grid lg:grid-cols-12 h-[calc(100svh-2.5rem)] bg-slate-50/50 font-body overflow-hidden">
       
       <div className={cn(
-        "lg:col-span-8 flex flex-col h-full bg-slate-50/50 overflow-hidden relative",
+        "lg:col-span-8 flex flex-col h-full overflow-hidden relative",
         showCheckoutMobile ? "hidden lg:flex" : "flex"
       )}>
         <div className="p-3 md:p-4 bg-white border-b shadow-sm shrink-0 flex justify-between items-center gap-2 overflow-x-auto">
@@ -680,8 +680,8 @@ export default function POSPage() {
       </div>
 
       <Card className={cn(
-        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl bg-white z-30 min-h-0",
-        showCheckoutMobile ? "fixed inset-0 h-full w-full" : "hidden lg:flex"
+        "lg:col-span-4 rounded-none border-none lg:border-l flex flex-col shadow-2xl z-30 min-h-0",
+        showCheckoutMobile ? "fixed inset-0 h-full w-full bg-slate-50" : "hidden lg:flex bg-white"
       )}>
         <CardHeader className="bg-slate-900 text-white p-4 flex flex-row justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
