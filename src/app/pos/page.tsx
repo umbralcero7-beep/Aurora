@@ -40,7 +40,8 @@ import {
   AlertTriangle,
   Download,
   PenLine,
-  PlusCircle
+  PlusCircle,
+  Clock
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -705,30 +706,32 @@ export default function POSPage() {
                     <Card 
                       key={num} 
                       className={cn(
-                        "rounded-xl border-2 transition-all h-20 flex flex-col items-center justify-center gap-1 group relative",
-                        status === 'free' ? "bg-white border-slate-200" : 
-                        status === 'ready' ? "bg-amber-50 border-amber-400 shadow-md cursor-pointer hover:scale-105" : 
-                        isUrgent ? "bg-red-50 border-red-400 shadow-md animate-pulse cursor-pointer hover:scale-105" :
-                        "bg-blue-50 border-blue-400 shadow-md cursor-pointer hover:scale-105",
-                        selectedOrder?.tableNumber === num ? "ring-2 ring-primary/30 border-primary" : ""
+                        "rounded-xl border-2 transition-all h-20 flex flex-col items-center justify-center gap-1 relative",
+                        status === 'free' ? "bg-white border-slate-200 hover:border-primary/50" : 
+                        status === 'ready' ? "bg-amber-50 border-amber-400 shadow-md" : 
+                        isUrgent ? "bg-red-50 border-red-400 shadow-md" :
+                        "bg-blue-50 border-blue-400 shadow-md",
+                        status !== 'free' ? "cursor-pointer hover:scale-105 active:scale-95" : "",
+                        selectedOrder?.tableNumber === num ? "ring-2 ring-primary/50 border-primary" : ""
                       )}
                       onClick={() => status !== 'free' && selectOrder(order)}
                     >
+                      {status !== 'free' && (
+                        <div className={cn(
+                          "absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-[6px] font-black flex items-center gap-0.5",
+                          isUrgent ? "bg-red-500 text-white" : "bg-slate-900 text-white"
+                        )}>
+                          <Clock className="h-2.5 w-2.5" />{elapsedMin}m
+                        </div>
+                      )}
                       {isAdmin && status === 'free' && (
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleRemoveTable(num) }}
-                          className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 h-5 w-5 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-colors"
+                          title="Eliminar mesa"
                         >
-                          <X className="h-2 w-2 text-white" />
+                          <X className="h-2.5 w-2.5 text-red-600" />
                         </button>
-                      )}
-                      {status !== 'free' && elapsedMin > 0 && (
-                        <div className={cn(
-                          "absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full text-[6px] font-black",
-                          isUrgent ? "bg-red-500 text-white" : "bg-slate-900 text-white"
-                        )}>
-                          {elapsedMin}m
-                        </div>
                       )}
                       <div className={cn(
                         "h-10 w-10 rounded-full flex items-center justify-center text-sm font-black",
