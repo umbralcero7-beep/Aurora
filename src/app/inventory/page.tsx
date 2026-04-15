@@ -101,6 +101,7 @@ export default function InventoryPage() {
   
   // Injection State
   const [isImportOpen, setIsImportOpen] = useState(false)
+  const [importType, setImportType] = useState<'supplies' | 'menu'>('supplies')
   const [importing, setImporting] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<any>(null)
@@ -183,25 +184,46 @@ export default function InventoryPage() {
     if (!db || previewData.length === 0 || !effectiveBusinessId) return;
     setImporting(true);
     try {
+      const collectionName = importType === 'supplies' ? "supplies" : "menu";
+      
       for (const item of previewData) {
-        await addDoc(collection(db, "supplies"), {
-          name: item.Insumo || item.Nombre || "Sin nombre",
-          sku: item.SKU || "S/N",
-          unit: item.Unidad || "Unid",
-          price: parseFloat(String(item.Costo).replace(/[^\d.]/g, '')) || 0,
-          stock: parseFloat(item.Stock || 0),
-          category: item.Categoría || "Proteínas",
-          businessId: effectiveBusinessId,
-          venueId: effectiveBusinessId,
-          assignedVenue: effectiveVenueName,
-          createdAt: new Date().toISOString(),
-        });
+        if (importType === 'supplies') {
+          await addDoc(collection(db, "supplies"), {
+            name: item.Insumo || item.Nombre || "Sin nombre",
+            sku: item.SKU || "S/N",
+            unit: item.Unidad || "Unid",
+            price: parseFloat(String(item.Costo || 0).replace(/[^\d.]/g, '')) || 0,
+            stock: parseFloat(item.Stock || 0),
+            category: item.Categoría || "Proteínas",
+            businessId: effectiveBusinessId,
+            venueId: effectiveBusinessId,
+            assignedVenue: effectiveVenueName,
+            createdAt: new Date().toISOString(),
+          });
+        } else {
+          // Motor de Inyección de Menú
+          await addDoc(collection(db, "menu"), {
+            name: item.Nombre || item.Plato || "Sin nombre",
+            category: item.Categoría || item.Categoria || "Otros",
+            description: item.Descripción || item.Descripcion || "",
+            price: parseFloat(String(item.Precio || 0).replace(/[^\d.]/g, '')) || 0,
+            stock: parseFloat(item.Stock || 100),
+            available: String(item.Disponibilidad || 'TRUE').toUpperCase() === 'TRUE',
+            imageUrl: item.Imagen_URL || item.Imagen || "",
+            businessId: effectiveBusinessId,
+            venueId: effectiveBusinessId,
+            assignedVenue: effectiveVenueName,
+            createdAt: new Date().toISOString(),
+          });
+        }
       }
-      toast({ title: "Carga Exitosa", description: "Activos inyectados." });
+      toast({ title: "Inyección Exitosa", description: `${importType === 'supplies' ? 'Insumos' : 'Platos'} sincronizados con el ecosistema.` });
       setIsImportOpen(false);
       setPreviewData([]);
       setAnalysisResult(null);
-    } catch (e) { console.error(e); } finally { setImporting(false); }
+    } catch (e) { 
+      toast({ variant: "destructive", title: "Falla de Inyección", description: "Verifica el formato del archivo." });
+    } finally { setImporting(false); }
   };
 
   const filteredSupplies = supplies?.filter(p => {
@@ -224,8 +246,11 @@ export default function InventoryPage() {
           <Button variant="outline" className="rounded-xl h-12 px-8 border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 shadow-sm" onClick={() => router.push('/costs')}>
             <TrendingUp className="mr-2 h-4 w-4 text-emerald-500" /> Ver Márgenes ERP
           </Button>
-          <Button className="flex-1 md:flex-none rounded-xl h-12 px-10 bg-slate-900 hover:bg-slate-800 text-white shadow-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95" onClick={() => setIsImportOpen(true)}>
+          <Button className="flex-1 md:flex-none rounded-xl h-12 px-10 bg-slate-900 hover:bg-slate-800 text-white shadow-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95" onClick={() => { setImportType('supplies'); setIsImportOpen(true); }}>
             <Plus className="mr-2 h-5 w-5" /> Inyectar Insumo
+          </Button>
+          <Button variant="outline" className="flex-1 md:flex-none rounded-xl h-12 px-8 border-slate-900 border-2 text-slate-900 shadow-sm font-black text-[10px] uppercase tracking-widest transition-all active:scale-95" onClick={() => { setImportType('menu'); setIsImportOpen(true); }}>
+            <Utensils className="mr-2 h-5 w-5" /> Inyectar Menú
           </Button>
         </div>
       </div>
@@ -340,13 +365,33 @@ export default function InventoryPage() {
           <div className="p-8 bg-slate-900 text-white flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-2xl bg-secondary/20 flex items-center justify-center border border-white/10">
-                <Database className="h-6 w-6 text-secondary" />
+                {importType === 'supplies' ? <Database className="h-6 w-6 text-secondary" /> : <Utensils className="h-6 w-6 text-secondary" />}
               </div>
-              <div><DialogTitle className="text-xl font-black uppercase">Inyección Unificada</DialogTitle><p className="text-[9px] font-black text-slate-400 uppercase">UDM Protocol (Oracle NetSuite style)</p></div>
+              <div>
+                <DialogTitle className="text-xl font-black uppercase">
+                  {importType === 'supplies' ? 'Inyección de Insumos' : 'Inyección de Menú'}
+                </DialogTitle>
+                <p className="text-[9px] font-black text-slate-400 uppercase">Protocolo de Carga Masiva - {effectiveVenueName}</p>
+              </div>
             </div>
             <button onClick={() => setIsImportOpen(false)} className="text-white/50 hover:text-white"><X className="h-6 w-6" /></button>
           </div>
           <div className="p-10 space-y-8">
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+               <button 
+                 onClick={() => { setImportType('supplies'); setAnalysisResult(null); }}
+                 className={cn("flex-1 h-10 rounded-xl text-[9px] font-black uppercase transition-all", importType === 'supplies' ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+               >
+                 Insumos ERP
+               </button>
+               <button 
+                 onClick={() => { setImportType('menu'); setAnalysisResult(null); }}
+                 className={cn("flex-1 h-10 rounded-xl text-[9px] font-black uppercase transition-all", importType === 'menu' ? "bg-white text-primary shadow-sm" : "text-slate-400")}
+               >
+                 Platos / Carta
+               </button>
+            </div>
+
             {!analysisResult ? (
               <div className="flex flex-col items-center justify-center py-20 border-4 border-dashed border-slate-50 rounded-[2rem] bg-slate-50/30 gap-6">
                 <Upload className="h-8 w-8 text-primary animate-bounce" />

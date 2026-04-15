@@ -145,33 +145,24 @@ export function AppSidebar() {
     {
       label: t.navGroups.operations,
       items: [
-        { title: t.nav.dashboard, url: "/", icon: LayoutDashboard, roles: ['ADMIN', 'SUPPORT', 'FINANCE', 'INVENTORY', 'RECEPTIONIST'] },
-        { title: t.nav.waiterOrders, url: "/comandas", icon: ShoppingCart, roles: ['ADMIN', 'WAITER', 'SUPPORT'], alert: hasNotifications || false },
         { title: t.nav.pos, url: "/pos", icon: Receipt, roles: ['ADMIN', 'CASHIER', 'SUPPORT'] },
-        { title: t.nav.menu, url: "/menu", icon: UtensilsCrossed, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'RECEPTIONIST', 'CHEF'] },
         { title: t.nav.deliveries, url: "/deliveries", icon: Truck, roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT'] },
-        { title: t.nav.orders, url: "/orders", icon: ChefHat, roles: ['ADMIN', 'WAITER', 'SUPPORT', 'CHEF'] },
+      ],
+    },
+    {
+      label: t.navGroups.middle,
+      items: [
+        { title: t.unified.service, url: "/orders", icon: ChefHat, roles: ['ADMIN', 'CHEF', 'WAITER', 'SUPPORT'] },
+        { title: t.unified.inventory, url: "/inventory", icon: Package, roles: ['ADMIN', 'SUPPORT', 'INVENTORY', 'CHEF'] },
       ],
     },
     {
       label: t.navGroups.finance,
       items: [
-        { title: t.nav.reports, url: "/reports", icon: TrendingUp, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
-        { title: t.nav.invoices, url: "/invoices", icon: FileText, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
-        { title: t.nav.fiscalControl, url: "/fiscal-control", icon: ShieldCheck, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
-        { title: t.nav.costs, url: "/costs", icon: Scale, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
-        { title: t.nav.waiters, url: "/waiters", icon: Users, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
-      ],
-    },
-    {
-      label: t.navGroups.administration,
-      items: [
-        { title: t.nav.products, url: "/inventory", icon: Package, roles: ['ADMIN', 'SUPPORT', 'INVENTORY', 'CHEF'] },
-        { title: t.nav.hr, url: "/hr", icon: Briefcase, roles: ['ADMIN', 'SUPPORT', 'HR'] },
-        { title: t.nav.users, url: "/settings/users", icon: Users, roles: ['ADMIN', 'SUPPORT'] },
-        { title: t.nav.venues, url: "/settings/venues", icon: Globe, roles: ['SUPPORT'] },
-        { title: t.nav.marketplace, url: "/marketplace", icon: Puzzle, roles: ['ADMIN', 'SUPPORT'] },
-        { title: 'Licencias', url: "/settings/licenses", icon: Key, roles: ['SUPPORT'] },
+        { title: t.unified.audit, url: "/fiscal-control", icon: ShieldCheck, roles: ['ADMIN', 'CASHIER', 'SUPPORT', 'FINANCE'] },
+        { title: t.unified.analytics, url: "/reports", icon: TrendingUp, roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
+        { title: t.unified.hr, url: "/hr", icon: Briefcase, roles: ['ADMIN', 'SUPPORT', 'HR', 'FINANCE'] },
+        { title: t.nav.customers, url: "/customers", icon: Users, roles: ['ADMIN', 'SUPPORT', 'RECEPTIONIST'] },
       ],
     },
     {

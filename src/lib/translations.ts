@@ -31,10 +31,17 @@ export const translations = {
       dishReport: "Dish Report",
     },
     navGroups: {
-      operations: "Operations",
-      finance: "Finance",
-      administration: "Administration",
-      system: "System",
+      operations: "Front-Office",
+      middle: "Operational Center",
+      finance: "Strategic Hub",
+      system: "System & Core",
+    },
+    unified: {
+      service: "Service Ops",
+      inventory: "Ecosystem & Menu",
+      audit: "Audit & Control",
+      analytics: "Analytics & Costs",
+      hr: "Talent & Capital"
     },
     licenses: {
       title: "License Center",
@@ -194,10 +201,17 @@ export const translations = {
       dishReport: "Reporte Platos",
     },
     navGroups: {
-      operations: "Operaciones",
-      finance: "Finanzas",
-      administration: "Administración",
-      system: "Sistema",
+      operations: "Front-Office",
+      middle: "Centro Operativo",
+      finance: "Eje Estratégico",
+      system: "Sistema & Núcleo",
+    },
+    unified: {
+      service: "Centro operativo",
+      inventory: "Ecosistema & Carta",
+      audit: "Auditoría & Control",
+      analytics: "Analítica & Costos",
+      hr: "Talento & Capital"
     },
     licenses: {
       title: "Centro de Licencias",
