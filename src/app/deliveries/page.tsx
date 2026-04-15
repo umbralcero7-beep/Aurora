@@ -20,8 +20,11 @@ import {
   Hash,
   Bot,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  FileText
 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { 
@@ -95,8 +98,11 @@ export default function DeliveriesPage() {
     address: "",
     notes: ""
   })
+  const [isElectronic, setIsElectronic] = useState(false)
   const [shippingCost, setShippingCost] = useState("")
   const [selectedItems, setSelectedItems] = useState<DeliveryItem[]>([])
+
+  const ADMIN_PIN = "2025" // PIN de Auditoría Maestro Aurora
 
   useEffect(() => {
     setMounted(true)
@@ -285,28 +291,20 @@ export default function DeliveriesPage() {
 
   const handlePasswordVerify = async () => {
     if (!adminPassword || !printingOrder) {
-      setPrintError(language === 'es' ? "Ingresa la contraseña" : "Enter the password")
+      setPrintError(language === 'es' ? "Ingresa el PIN" : "Enter the PIN")
       return
     }
     setIsVerifyingPassword(true)
     setPrintError(null)
 
     try {
-      if (!db || !user?.email) return
-      const userDoc = await getDoc(doc(db, 'users', user.email.toLowerCase()))
-      if (!userDoc.exists()) {
-        setPrintError(language === 'es' ? "Usuario no encontrado" : "User not found")
-        setIsVerifyingPassword(false)
-        return
-      }
-      const userData = userDoc.data()
-      if (userData.passwordHash === adminPassword) {
+      if (adminPassword === ADMIN_PIN) {
         executePrint(printingOrder)
         setShowPasswordDialog(false)
         setAdminPassword("")
         setPrintingOrder(null)
       } else {
-        setPrintError(language === 'es' ? "Contraseña incorrecta" : "Incorrect password")
+        setPrintError(language === 'es' ? "PIN Incorrecto" : "Incorrect PIN")
       }
     } catch (err) {
       setPrintError(language === 'es' ? "Error al verificar" : "Error verifying")
@@ -342,6 +340,7 @@ export default function DeliveriesPage() {
       venueId: effectiveBusinessId,
       businessId: effectiveBusinessId,
       assignedVenue: effectiveVenueName,
+      isElectronic: isElectronic, // Flag DIAN
       createdAt: new Date().toISOString(),
       registeredBy: user?.email || "System"
     };
@@ -352,6 +351,7 @@ export default function DeliveriesPage() {
         setIsRegisterOpen(false)
         setDeliveryData({ customerName: "", phone: "", address: "", notes: "" })
         setSelectedItems([])
+        setIsElectronic(false)
         setCustomerRecognized(false)
         setIsFinishing(false)
         toast({ title: "Despacho Iniciado", description: `Comanda #${orderNumber} enviada.` })
@@ -518,6 +518,15 @@ export default function DeliveriesPage() {
                         value={shippingCost}
                         onChange={(e) => setShippingCost(e.target.value)}
                       />
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                       <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-primary" />
+                          <div>
+                             <p className="text-[10px] font-black uppercase text-slate-900">Factura Electrónica DIAN</p>
+                             <p className="text-[8px] font-bold text-slate-400 uppercase">Habilitar protocolo legal</p>
+                          </div>
+                       </div>
+                       <Switch checked={isElectronic} onCheckedChange={setIsElectronic} />
                     </div>
                   </div>
                 </div>
@@ -719,8 +728,9 @@ export default function DeliveriesPage() {
               </Label>
               <Input 
                 type="password"
-                className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center"
-                placeholder="••••••••"
+                className="h-12 rounded-xl bg-slate-50 border-none font-black text-center text-xl tracking-widest"
+                placeholder="****"
+                maxLength={4}
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handlePasswordVerify()}

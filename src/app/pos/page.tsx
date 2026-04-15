@@ -139,12 +139,24 @@ export default function POSPage() {
     return query(collection(db, "orders"), where("businessId", "==", effectiveBusinessId))
   }, [db, effectiveBusinessId])
 
+  const deliveriesQuery = useMemoFirebase(() => {
+     if (!db || !effectiveBusinessId) return null
+     return query(
+       collection(db, "deliveries"), 
+       where("businessId", "==", effectiveBusinessId),
+       where("status", "!=", "Anulado"),
+       orderBy("createdAt", "desc"),
+       limit(10)
+     )
+  }, [db, effectiveBusinessId])
+
   const menuQuery = useMemoFirebase(() => {
     if (!db || !effectiveBusinessId) return null
     return query(collection(db, "menu"), where("businessId", "==", effectiveBusinessId))
   }, [db, effectiveBusinessId])
 
   const { data: allOrders } = useCollection(openOrdersQuery)
+  const { data: allDeliveries } = useCollection(deliveriesQuery)
   const { data: dbMenu, isLoading: menuLoading } = useCollection(menuQuery)
 
   const activeOrders = useMemo(() => {
@@ -294,7 +306,11 @@ export default function POSPage() {
                Directa
              </button>
              <button onClick={() => setActiveTab('tables')} className={cn("px-4 h-8 rounded-md text-[9px] font-black uppercase tracking-widest transition-all", activeTab === 'tables' ? "bg-white text-primary shadow-sm" : "text-white/60 hover:text-white")}>
-               Salón
+               Mesas
+             </button>
+             <button onClick={() => setActiveTab('waitlist')} className={cn("px-4 h-8 rounded-md text-[9px] font-black uppercase tracking-widest transition-all relative", activeTab === 'waitlist' ? "bg-white text-primary shadow-sm" : "text-white/60 hover:text-white")}>
+               Espera
+               {(allDeliveries?.length || 0) > 0 && <span className="absolute -top-1 -right-1 h-3 w-3 bg-secondary rounded-full border-2 border-primary animate-pulse" />}
              </button>
           </div>
         </div>
@@ -403,12 +419,50 @@ export default function POSPage() {
                   const order = tableData[num]
                   const hasOrder = !!order
                   return (
-                    <div key={num} onClick={() => hasOrder && (setSelectedOrder(order), setDirectCart([]))} className={cn("aspect-square rounded-[1.5rem] border-2 flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm", hasOrder ? "bg-white border-primary shadow-primary/5" : "bg-white border-dashed border-slate-100 opacity-60 hover:opacity-100 hover:border-slate-300")}>
+                    <div key={num} onClick={() => hasOrder && (setSelectedOrder(order), setDirectCart([]), setIsElectronicEnabled(false))} className={cn("aspect-square rounded-[1.5rem] border-2 flex flex-col items-center justify-center cursor-pointer transition-all active:scale-95 shadow-sm", hasOrder ? "bg-white border-primary shadow-primary/5" : "bg-white border-dashed border-slate-100 opacity-60 hover:opacity-100 hover:border-slate-300")}>
                       <span className={cn("text-2xl font-black tracking-tight", hasOrder ? "text-primary" : "text-slate-200")}>{num}</span>
                       <span className={cn("text-[8px] font-black uppercase mt-1", hasOrder ? "text-primary/60" : "text-slate-200")}>{hasOrder ? 'OCUPADA' : 'LIBRE'}</span>
                     </div>
                   )
                 })}
+              </div>
+            ) : activeTab === 'waitlist' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {/* Domicilios en Espera */}
+                 {(allDeliveries || []).map(del => (
+                   <Card key={del.id} onClick={() => {
+                     setSelectedOrder(null);
+                     setDirectCart(del.items || []);
+                     setIsElectronicEnabled(del.isElectronic || false);
+                     if (del.isElectronic) {
+                        setCustomerData({
+                           taxId: del.phone || "",
+                           name: del.customerName || "",
+                           email: del.email || "",
+                           address: del.address || ""
+                        });
+                     }
+                     toast({ title: "Cargado", description: `Pedido de ${del.customerName} listo para cobro.` });
+                   }} className="bg-white rounded-2xl border-slate-100 shadow-xl overflow-hidden cursor-pointer hover:border-primary transition-all">
+                      <CardContent className="p-6 space-y-3">
+                         <div className="flex justify-between items-start">
+                             <Badge className="bg-orange-500 text-white font-black text-[8px] uppercase">DOMICILIO #{del.orderNumber}</Badge>
+                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{del.status}</span>
+                         </div>
+                         <h4 className="font-black text-slate-900 uppercase text-sm">{del.customerName}</h4>
+                         <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                            <span className="text-xl font-black text-primary">{formatCurrencyDetailed(del.total)}</span>
+                            {del.isElectronic && <Badge className="bg-primary/10 text-primary border-none rounded-lg font-black text-[7px] uppercase tracking-tighter">DIAN: REQUERIDO</Badge>}
+                         </div>
+                      </CardContent>
+                   </Card>
+                 ))}
+                 {(allDeliveries?.length === 0) && (
+                   <div className="col-span-full py-20 text-center border-4 border-dashed rounded-[2rem] bg-slate-50/20">
+                     <Clock className="h-10 w-10 mx-auto mb-4 opacity-10" />
+                     <p className="text-slate-300 font-black uppercase text-xs tracking-widest">Sin solicitudes externas</p>
+                   </div>
+                 )}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-20">

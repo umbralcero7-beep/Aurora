@@ -31,7 +31,8 @@ import {
   Receipt,
   MinusCircle,
   ArrowRight,
-  RotateCcw
+  RotateCcw,
+  Lock
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
@@ -116,7 +117,11 @@ export default function FiscalControlPage() {
   const [returnInvoice, setReturnInvoice] = useState<any>(null)
   const [refunding, setRefunding] = useState(false)
   const [refundReason, setRefundReason] = useState("")
+  const [refundPin, setRefundPin] = useState("")
   const [showRefundDialog, setShowRefundDialog] = useState(false)
+  const [refundError, setRefundError] = useState<string | null>(null)
+
+  const ADMIN_PIN = "2025" // PIN de Auditoría Maestro Aurora
 
   // Super user: show all venues selector
   const [selectedVenue, setSelectedVenue] = useState<string>('');
@@ -291,6 +296,17 @@ export default function FiscalControlPage() {
 
   const handleProcessRefund = async () => {
     if (!db || !returnInvoice) return
+    
+    setRefundError(null)
+    if (!refundReason.trim()) {
+      setRefundError("El motivo es obligatorio")
+      return
+    }
+    if (refundPin !== ADMIN_PIN) {
+      setRefundError("PIN de Administrador Incorrecto")
+      return
+    }
+
     setRefunding(true)
     try {
       await setDoc(doc(db, "invoices", returnInvoice.id), {
@@ -304,6 +320,8 @@ export default function FiscalControlPage() {
       setShowRefundDialog(false)
       setReturnInvoice(null)
       setReturnSearch("")
+      setRefundPin("")
+      setRefundReason("")
     } catch (error) {
       toast({ variant: "destructive", title: "Error en base de datos", description: "No se pudo procesar la anulación." })
     } finally {
@@ -765,23 +783,37 @@ export default function FiscalControlPage() {
                 </div>
               </div>
             )}
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Motivo de la Devolución</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Motivo de la Devolución (Obligatorio)</label>
               <Input 
                 value={refundReason} 
                 onChange={(e) => setRefundReason(e.target.value)} 
-                placeholder="Error en cobro / Plato devuelto..."
+                placeholder="Explicación detallada del error..."
                 className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold"
               />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">PIN de Autorización Admin</label>
+              <div className="relative">
+                <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                <Input 
+                  type="password"
+                  value={refundPin} 
+                  onChange={(e) => setRefundPin(e.target.value)} 
+                  placeholder="****"
+                  maxLength={4}
+                  className="h-14 rounded-2xl bg-slate-50 border-none pl-14 font-black text-center text-xl tracking-widest"
+                />
+              </div>
+              {refundError && <p className="text-[10px] font-black text-destructive text-center uppercase mt-2">{refundError}</p>}
             </div>
             <div className="flex gap-4">
                <Button variant="ghost" onClick={() => setShowRefundDialog(false)} className="flex-1 h-14 font-black uppercase text-[10px]">Cancelar</Button>
                <Button 
-                 disabled={refunding || !refundReason}
+                 disabled={refunding || !refundReason || refundPin.length < 4}
                  onClick={handleProcessRefund} 
                  className="flex-[2] h-14 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-xl shadow-red-600/20"
                >
-                 {refunding ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : "Ejecutar Devolución"}
+                 {refunding ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : "Autorizar y Ejecutar"}
                </Button>
             </div>
           </div>
