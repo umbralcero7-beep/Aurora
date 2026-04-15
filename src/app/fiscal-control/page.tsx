@@ -107,8 +107,16 @@ export default function FiscalControlPage() {
   const { data: profile } = useDoc(userProfileRef);
 
   const isSuper = isSuperUser(user?.email);
+  const isAdmin = profile?.role === 'ADMIN' || isSuper;
   const effectiveBusinessId = isSuper ? null : (profile?.businessId || (isSuper ? 'matu' : null));
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
+
+  // Estados para Devoluciones (Admin Only)
+  const [returnSearch, setReturnSearch] = useState("")
+  const [returnInvoice, setReturnInvoice] = useState<any>(null)
+  const [refunding, setRefunding] = useState(false)
+  const [refundReason, setRefundReason] = useState("")
+  const [showRefundDialog, setShowRefundDialog] = useState(false)
 
   // Super user: show all venues selector
   const [selectedVenue, setSelectedVenue] = useState<string>('');
@@ -245,8 +253,18 @@ export default function FiscalControlPage() {
 
     const expTotal = sessionExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0)
 
+    // Cero AI Fraud Detection Logic
+    const anomalies = []
+    if (cancelledDeliveries.length > activeDeliveries.length * 0.2 && activeDeliveries.length > 5) {
+      anomalies.push({ id: 'high-cancellation', priority: 'high', title: 'Tasa Crítica de Anulaciones', detail: "El 20% de los domicilios están siendo anulados. Posible fuga de capital en despachos." })
+    }
+    if (expTotal > invStats.total * 0.5 && invStats.total > 0) {
+      anomalies.push({ id: 'high-expenses', priority: 'medium', title: 'Gastos Desproporcionados', detail: "Los gastos operativos superan el 50% de las ventas brutas registradas." })
+    }
+
     return {
       ...invStats,
+      anomalies,
       cash: invStats.cash + delTotal,
       totalCombined: invStats.total + delTotal,
       deliveryCount: activeDeliveries.length,
@@ -258,6 +276,40 @@ export default function FiscalControlPage() {
       itemSales: Object.values(itemMap).sort((a, b) => b.quantity - a.quantity)
     }
   }, [sessionInvoices, sessionDeliveries, sessionExpenses])
+
+  // Lógica de Devoluciones
+  const handleFindInvoice = () => {
+    if (!returnSearch) return
+    const found = (allInvoices || []).find(inv => inv.id === returnSearch.trim() || inv.reportNumber === returnSearch.trim())
+    if (!found) {
+      toast({ variant: "destructive", title: "No encontrado", description: "No existe factura con ese serial." })
+    } else {
+      setReturnInvoice(found)
+      setShowRefundDialog(true)
+    }
+  }
+
+  const handleProcessRefund = async () => {
+    if (!db || !returnInvoice) return
+    setRefunding(true)
+    try {
+      await setDoc(doc(db, "invoices", returnInvoice.id), {
+        status: 'Anulada/Devuelta',
+        annulledAt: new Date().toISOString(),
+        annulledBy: user?.email,
+        annulledReason: refundReason
+      }, { merge: true })
+      
+      toast({ title: "Devolución Exitosa", description: "La venta ha sido anulada en los registros fiscales." })
+      setShowRefundDialog(false)
+      setReturnInvoice(null)
+      setReturnSearch("")
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error en base de datos", description: "No se pudo procesar la anulación." })
+    } finally {
+      setRefunding(false)
+    }
+  }
 
   const printFiscalReport = (report: any) => {
     if (typeof window === 'undefined') return;
@@ -522,14 +574,60 @@ export default function FiscalControlPage() {
           </CardContent>
         </Card>
 
+        {/* Cero AI Fraud Shield Section */}
+        {stats.anomalies.length > 0 && (
+          <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stats.anomalies.map(ano => (
+              <Card key={ano.id} className="bg-red-50 border-red-100 rounded-[2rem] p-6 shadow-xl relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-4"><AlertTriangle className="h-20 w-20 text-red-500/10 -rotate-12 group-hover:rotate-0 transition-transform" /></div>
+                 <div className="flex items-center gap-3 mb-3 text-red-600">
+                    <BrainCircuit className="h-5 w-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Cero Fraud Shield</span>
+                 </div>
+                 <h4 className="text-red-900 font-black uppercase text-xs mb-2">{ano.title}</h4>
+                 <p className="text-[10px] text-red-700/80 font-bold leading-relaxed">{ano.detail}</p>
+              </Card>
+            ))}
+          </div>
+        )}
+
         <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2rem] p-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gastos del Día</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-destructive tracking-tighter">{formatCurrencyDetailed(stats.expensesTotal)}</div>
+             <div className="flex items-center justify-center py-4 bg-white rounded-2xl shadow-sm">
+                <p className="text-3xl font-black text-slate-800 tracking-tighter">{reportsLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : formatCurrencyDetailed(stats.expensesTotal || 0)}</p>
+             </div>
           </CardContent>
         </Card>
+
+        {/* Sección de Devoluciones Exclusiva Admin */}
+        {isAdmin && (
+           <Card className="bg-white border-2 border-red-50 shadow-2xl rounded-[2rem] p-6 md:col-span-1">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-10 w-10 bg-red-50 rounded-xl flex items-center justify-center border border-red-100"><RotateCcw className="h-5 w-5 text-red-600" /></div>
+                <div>
+                   <h3 className="text-xs font-black uppercase text-slate-900">Módulo Devoluciones</h3>
+                   <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">Acceso Restringido Admin</span>
+                </div>
+              </div>
+              <div className="space-y-4">
+                 <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input 
+                      placeholder="Serial Factura (ej: 0d5e...)" 
+                      value={returnSearch}
+                      onChange={(e) => setReturnSearch(e.target.value)}
+                      className="h-12 pl-12 rounded-xl bg-slate-50 border-none font-bold text-xs"
+                    />
+                 </div>
+                 <Button onClick={handleFindInvoice} className="w-full h-12 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase text-[9px] tracking-widest shadow-lg shadow-red-600/20">
+                    Audit & Revertir
+                 </Button>
+              </div>
+           </Card>
+        )}
 
         <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2rem] p-2">
           <CardHeader className="pb-2">
@@ -642,6 +740,51 @@ export default function FiscalControlPage() {
           <div className="p-8 bg-slate-900 text-white flex justify-between items-center"><DialogTitle className="text-xl font-black uppercase">Reporte Parcial X</DialogTitle></div>
           <ScrollArea className="max-h-[60vh] p-10"><div className="bg-slate-50 p-8 rounded-3xl font-mono text-[11px] space-y-4"><div className="text-center border-b border-dashed pb-6 mb-6 font-black">AURORA OS</div><div className="flex justify-between"><span>TOTAL:</span><span>{formatCurrencyDetailed(stats.totalCombined)}</span></div></div></ScrollArea>
           <div className="p-8 border-t bg-slate-50"><Button className="w-full h-14 bg-primary text-white rounded-xl font-black uppercase text-[9px]" onClick={() => { printFiscalReport(reportPreview); setIsPreviewOpen(false); }}>Imprimir X</Button></div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmación Devolución (Admin) */}
+      <Dialog open={showRefundDialog} onOpenChange={setShowRefundDialog}>
+        <DialogContent className="max-w-md rounded-[2.5rem] p-0 overflow-hidden bg-white border-none shadow-2xl">
+          <div className="p-8 bg-red-600 text-white space-y-2">
+            <div className="h-12 w-12 rounded-2xl bg-white/20 flex items-center justify-center border border-white/20 mb-4">
+              <AlertTriangle className="h-6 w-6 text-white" />
+            </div>
+            <DialogTitle className="text-xl font-black uppercase tracking-tighter">Confirmar Anulación</DialogTitle>
+            <DialogDescription className="text-[10px] font-black text-white/70 uppercase">
+              Estas a punto de revertir una transacción ingresada en el sistema. Esta acción quedará grabada en el log de auditoría.
+            </DialogDescription>
+          </div>
+          <div className="p-8 space-y-6">
+            {returnInvoice && (
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Detalle de Factura</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-black text-slate-900 uppercase">#{returnInvoice.id.slice(-8)}</span>
+                  <span className="text-sm font-black text-red-600">{formatCurrencyDetailed(returnInvoice.total)}</span>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Motivo de la Devolución</label>
+              <Input 
+                value={refundReason} 
+                onChange={(e) => setRefundReason(e.target.value)} 
+                placeholder="Error en cobro / Plato devuelto..."
+                className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold"
+              />
+            </div>
+            <div className="flex gap-4">
+               <Button variant="ghost" onClick={() => setShowRefundDialog(false)} className="flex-1 h-14 font-black uppercase text-[10px]">Cancelar</Button>
+               <Button 
+                 disabled={refunding || !refundReason}
+                 onClick={handleProcessRefund} 
+                 className="flex-[2] h-14 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-xl shadow-red-600/20"
+               >
+                 {refunding ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : "Ejecutar Devolución"}
+               </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
