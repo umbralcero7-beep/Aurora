@@ -27,7 +27,6 @@ import { Logo } from '@/components/ui/logo';
 import { isSuperUser } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { ErrorBoundary } from '@/components/error-boundary';
 import { useLanguage } from '@/context/language-context';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useTheme } from 'next-themes';
@@ -195,9 +194,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
           )}
           
           <div className="flex-1 w-full max-w-[1600px] mx-auto p-0 overflow-y-auto scroll-smooth pb-20 md:pb-0">
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
+            {children}
           </div>
 
           {/* Mobile Navigator Bar */}

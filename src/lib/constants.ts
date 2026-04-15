@@ -4,7 +4,7 @@
  */
 
 // Tasa de Impuesto / Autopropina (Sugerida por defecto en Colombia 15% o 8% INC)
-export const AURORA_TAX_RATE = 0.15;
+export const AURORA_TAX_RATE = 0.19;
 
 // Configuración de Facturación POS
 export const POS_PREFIX = "AUR-";
