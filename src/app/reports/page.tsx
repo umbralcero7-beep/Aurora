@@ -904,7 +904,7 @@ export default function ReportsPage() {
             </CardFooter>
           </Card>
         </div>
-      </Dialog>
+      </div>
 
       {/* Modal Envío Email Reporte */}
       <Dialog open={emailModalOpen} onOpenChange={setEmailModalOpen}>

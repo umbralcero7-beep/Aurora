@@ -534,6 +534,7 @@ export default function DeliveriesPage() {
                         value={shippingCost}
                         onChange={(e) => setShippingCost(e.target.value)}
                       />
+                    </div>
                     <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
                        <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-primary" />

@@ -783,14 +783,15 @@ export default function FiscalControlPage() {
                 </div>
               </div>
             )}
-              <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Motivo de la Devolución (Obligatorio)</label>
-              <Input 
-                value={refundReason} 
-                onChange={(e) => setRefundReason(e.target.value)} 
-                placeholder="Explicación detallada del error..."
-                className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold"
-              />
-            </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-2">Motivo de la Devolución (Obligatorio)</label>
+                <Input 
+                  value={refundReason} 
+                  onChange={(e) => setRefundReason(e.target.value)} 
+                  placeholder="Explicación detallada del error..."
+                  className="h-14 rounded-2xl bg-slate-50 border-none px-6 font-bold"
+                />
+              </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase ml-2">PIN de Autorización Admin</label>
               <div className="relative">
