@@ -389,7 +389,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-[1400px] mx-auto bg-white min-h-full font-body">
+    <div className="p-6 space-y-6 max-w-[1400px] mx-auto bg-white min-h-full font-body">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
@@ -409,22 +409,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-        <div className="lg:col-span-1 space-y-8">
-          <Card className="rounded-[2rem] border-slate-100 shadow-xl p-2 bg-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Accesos de Autoridad</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="ghost" className="w-full justify-start gap-4 h-12 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50" asChild>
-                <Link href="/settings/users"><Users className="h-4 w-4 text-primary" /> Gestionar Personal</Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start gap-4 h-12 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50" asChild>
-                <Link href="/settings/profile"><UserCircle className="h-4 w-4 text-primary" /> Mi Perfil Aurora</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1 space-y-6">
           <Card className="rounded-[2rem] bg-slate-900 text-white p-6 shadow-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
             <div className="relative z-10 space-y-4">
@@ -432,7 +418,7 @@ export default function SettingsPage() {
                 <BrainCircuit className="h-5 w-5 text-primary" />
                 <h4 className="text-[9px] font-black uppercase tracking-widest text-primary">Cero AI Status</h4>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase italic leading-relaxed">
+              <p className="text-[11px] font-bold text-slate-400 uppercase italic leading-relaxed">
                 {aiStatus === 'active' ? '"Motor Gemini 2.0 vinculado. Escaneo de transacciones activo."' : '"Modo local activo. Análisis basado en algoritmos de respaldo."'}
               </p>
             </div>
@@ -440,7 +426,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="lg:col-span-3">
-          <Tabs defaultValue="billing" className="w-full space-y-10">
+          <Tabs defaultValue="billing" className="w-full space-y-6">
             <TabsList className="bg-slate-100 p-1.5 rounded-[1.5rem] h-14 w-full grid grid-cols-5 border border-slate-100 overflow-hidden">
               <TabsTrigger value="business" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Negocio</TabsTrigger>
               <TabsTrigger value="billing" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Impuestos</TabsTrigger>
@@ -488,8 +474,8 @@ export default function SettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="import" className="space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <TabsContent value="import" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="rounded-[2.5rem] border-slate-100 shadow-xl p-8 bg-white space-y-6">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-2xl bg-primary/5 flex items-center justify-center border border-primary/10">

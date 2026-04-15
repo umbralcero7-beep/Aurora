@@ -451,11 +451,9 @@ export default function FiscalControlPage() {
         setCashPhysical(""); 
         setZStep(1);
         setReportPreview(null);
-        toast({ title: "Cierre Z Exitoso", description: "Jornada cerrada. Sesión finalizando..." });
+        toast({ title: "Cierre Z Exitoso", description: "Jornada cerrada. Redirigiendo a reportes..." });
         
-        if (auth) {
-          setTimeout(() => { signOut(auth).then(() => router.push('/login')); }, 3000);
-        }
+        setTimeout(() => { router.push('/reports'); }, 2000);
       })
       .catch(err => {
         if (isOfflineError(err)) {

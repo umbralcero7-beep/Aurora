@@ -154,24 +154,39 @@ export default function ReportsPage() {
   }, [allDeliveries, sessionStartIso])
 
   const stats = useMemo(() => {
-    const itemMap: Record<string, { name: string, quantity: number }> = {}
+    const itemMap: Record<string, { name: string, quantity: number, total: number }> = {}
     
     currentSessionInvoices.forEach(inv => {
       inv.items?.forEach((item: any) => {
-        if (!itemMap[item.id]) itemMap[item.id] = { name: item.name, quantity: 0 }
+        if (!itemMap[item.id]) itemMap[item.id] = { name: item.name, quantity: 0, total: 0 }
         itemMap[item.id].quantity += Number(item.quantity)
+        itemMap[item.id].total += (Number(item.price) * Number(item.quantity))
       })
     })
 
     currentSessionDeliveries.forEach(d => {
       d.items?.forEach((item: any) => {
-        if (!itemMap[item.id]) itemMap[item.id] = { name: item.name, quantity: 0 }
+        if (!itemMap[item.id]) itemMap[item.id] = { name: item.name, quantity: 0, total: 0 }
         itemMap[item.id].quantity += Number(item.quantity)
+        itemMap[item.id].total += (Number(item.price) * Number(item.quantity))
       })
     })
 
     const posTotal = currentSessionInvoices.reduce((acc, inv) => acc + (Number(inv.total) || 0), 0)
     const deliveryTotal = currentSessionDeliveries.reduce((acc, d) => acc + (Number(d.total) || 0), 0)
+
+    // Ventas por Mesero/Cajero
+    const staffMap: Record<string, { total: number, count: number }> = {}
+    currentSessionInvoices.forEach(inv => {
+      const name = inv.cashierName || 'DESCONOCIDO'
+      if (!staffMap[name]) staffMap[name] = { total: 0, count: 0 }
+      staffMap[name].total += Number(inv.total)
+      staffMap[name].count += 1
+    })
+
+    // Domicilios cancelados y enviados
+    const deliveredDelivs = currentSessionDeliveries.filter(d => d.status === 'Delivered')
+    const cancelledDelivs = (allDeliveries || []).filter(d => (d.createdAt || "") > sessionStartIso && d.status === 'Anulado')
 
     // Ventas rápidas: facturas con tableNumber "PARA LLEVAR"
     const quickSales = currentSessionInvoices.filter(inv => inv.tableNumber === 'PARA LLEVAR')
@@ -186,6 +201,9 @@ export default function ReportsPage() {
       posCount: currentSessionInvoices.length,
       deliveryTotal,
       deliveryCount: currentSessionDeliveries.length,
+      deliveredCount: deliveredDelivs.length,
+      cancelledCount: cancelledDelivs.length,
+      cancelledTotal: cancelledDelivs.reduce((acc, d) => acc + (Number(d.total) || 0), 0),
       grandTotal: posTotal + deliveryTotal,
       itemSales: Object.values(itemMap).sort((a, b) => b.quantity - a.quantity),
       quickSales,
@@ -194,8 +212,9 @@ export default function ReportsPage() {
       tableSales,
       tableTotal,
       tableCount: tableSales.length,
+      staffSales: Object.entries(staffMap).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.total - a.total)
     }
-  }, [currentSessionInvoices, currentSessionDeliveries])
+  }, [currentSessionInvoices, currentSessionDeliveries, allDeliveries, sessionStartIso])
 
   const printInventoryChecklist = () => {
     if (typeof window === 'undefined') return;
@@ -286,8 +305,8 @@ export default function ReportsPage() {
   if (!mounted) return null;
 
   return (
-    <div className="p-4 md:p-10 space-y-10 bg-white min-h-full max-w-[1600px] mx-auto font-body">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-50 pb-10">
+    <div className="p-4 md:p-6 space-y-6 bg-white min-h-full max-w-[1600px] mx-auto font-body">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-50 pb-6">
         <div>
           <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-4">
             <Globe className="h-8 w-8 text-secondary" />
@@ -359,10 +378,47 @@ export default function ReportsPage() {
               <TabsTrigger value="dishes" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
                 <Utensils className="mr-2 h-3 w-3" /> Detalle Platos
               </TabsTrigger>
+              <TabsTrigger value="staff" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
+                <Users className="mr-2 h-3 w-3" /> Venta por Mesero
+              </TabsTrigger>
               <TabsTrigger value="detailed" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
                 <ReceiptText className="mr-2 h-3 w-3" /> Venta Detallada
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="staff">
+              <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl bg-white">
+                <CardHeader className="px-10 pt-10 pb-4">
+                  <CardTitle className="text-xl font-black text-slate-900 uppercase flex items-center gap-3">
+                    <Users className="h-6 w-6 text-primary" /> Rendimiento de Personal
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-10 pb-10">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-black text-[9px] uppercase">Mesero / Cajero</TableHead>
+                        <TableHead className="text-right font-black text-[9px] uppercase">Pedidos</TableHead>
+                        <TableHead className="text-right font-black text-[9px] uppercase">Total Vendido</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {stats.staffSales.length === 0 ? (
+                        <TableRow><TableCell colSpan={3} className="text-center py-10 text-slate-300 font-black text-xs">Sin datos de personal en sesión</TableCell></TableRow>
+                      ) : (
+                        stats.staffSales.map((s, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-black text-[10px] uppercase">{s.name}</TableCell>
+                            <TableCell className="text-right font-black text-[10px]">{s.count}</TableCell>
+                            <TableCell className="text-right font-black text-[10px] text-primary">{formatCurrencyDetailed(s.total)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="audit">
               <Card className="rounded-[2.5rem] border-slate-100 shadow-2xl p-10 bg-white">
