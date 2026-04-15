@@ -518,24 +518,43 @@ export default function POSPage() {
                    <p className="text-[10px] font-black text-white/60 uppercase">Protocolo Legal Vigente Col.</p>
                 </div>
              </div>
-             <Switch checked={isElectronicEnabled} onCheckedChange={setIsElectronicEnabled} id="electronic-invoice-mode" />
-             <Label htmlFor="electronic-invoice-mode" className="text-[10px] font-black uppercase mr-8 cursor-pointer">{isElectronicEnabled ? 'F. Electrónica ON' : 'F. Electrónica OFF'}</Label>
           </div>
 
           <ScrollArea className="max-h-[85vh]">
             <div className="p-8 space-y-8">
+               {/* Selector de Tipo de Documento */}
+               <div className="flex bg-slate-100 p-1 rounded-2xl">
+                  <button 
+                    onClick={() => setIsElectronicEnabled(false)}
+                    className={cn(
+                      "flex-1 h-12 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all",
+                      !isElectronicEnabled ? "bg-white text-primary shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    <Ticket className="h-4 w-4" /> Remisión / POS
+                  </button>
+                  <button 
+                    onClick={() => setIsElectronicEnabled(true)}
+                    className={cn(
+                      "flex-1 h-12 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all",
+                      isElectronicEnabled ? "bg-primary text-white shadow-md shadow-primary/20" : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    <FileText className="h-4 w-4" /> Factura Electrónica
+                  </button>
+               </div>
+
                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                  
                   {/* Columna Izquierda: Información de Pago */}
                   <div className="space-y-6">
-                    <div className="bg-slate-50 rounded-2xl p-6 text-center">
-                       <p className="text-[10px] font-black text-slate-400 uppercase">Total Final</p>
+                    <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
+                       <p className="text-[10px] font-black text-slate-400 uppercase">Total a Pagar</p>
                        <p className="text-4xl font-black text-primary tracking-tighter">{formatCurrencyDetailed(currentTotal)}</p>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
                        {[{ id:'Efectivo', icon: Banknote }, { id:'Datáfono', icon: CreditCard }, { id:'Transferencia', icon: Smartphone }].map(m => (
-                         <button key={m.id} onClick={() => setPaymentMethod(m.id as any)} className={cn("p-4 rounded-xl flex flex-col items-center gap-2 border-2 transition-all", paymentMethod === m.id ? "bg-primary text-white border-primary" : "bg-white border-slate-100 text-slate-400")}>
+                         <button key={m.id} onClick={() => setPaymentMethod(m.id as any)} className={cn("p-4 rounded-xl flex flex-col items-center gap-2 border-2 transition-all", paymentMethod === m.id ? "bg-primary text-white border-primary shadow-lg shadow-primary/10" : "bg-white border-slate-100 text-slate-400 hover:border-primary/20")}>
                            <m.icon className="h-5 w-5" />
                            <span className="text-[8px] font-black uppercase">{m.id}</span>
                          </button>
@@ -544,11 +563,11 @@ export default function POSPage() {
 
                     {paymentMethod === 'Efectivo' && (
                        <div className="space-y-4 pt-2">
-                          <Input type="number" value={cashReceived || ''} onChange={e => setCashReceived(Number(e.target.value))} placeholder="Monto Recibido" className="h-14 text-center text-xl font-black rounded-xl" />
+                          <Input type="number" value={cashReceived || ''} onChange={e => setCashReceived(Number(e.target.value))} placeholder="Monto Recibido" className="h-14 text-center text-xl font-black rounded-xl bg-slate-50 border-none px-6" />
                           {cashReceived > currentTotal && (
-                             <div className="h-12 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-center gap-3">
-                                <span className="text-[10px] font-black text-emerald-600 uppercase">Cambio:</span>
-                                <span className="text-lg font-black text-emerald-600">{formatCurrencyDetailed(cashReceived - currentTotal)}</span>
+                             <div className="h-14 bg-emerald-500 text-white rounded-xl flex items-center justify-between px-6 shadow-xl shadow-emerald-500/20">
+                                <span className="text-[10px] font-black uppercase">Cambio:</span>
+                                <span className="text-xl font-black">{formatCurrencyDetailed(cashReceived - currentTotal)}</span>
                              </div>
                           )}
                        </div>
@@ -556,28 +575,28 @@ export default function POSPage() {
                   </div>
 
                   {/* Columna Derecha: Facturación Electrónica DIAN */}
-                  <div className={cn("space-y-4 p-6 rounded-2xl border-2 transition-all", isElectronicEnabled ? "bg-slate-50 border-primary" : "bg-slate-50/50 border-dashed border-slate-200 opacity-40")}>
+                  <div className={cn("space-y-4 p-6 rounded-2xl border-2 transition-all h-full", isElectronicEnabled ? "bg-slate-50 border-primary" : "bg-slate-50/30 border-dashed border-slate-100 opacity-20")}>
                      <div className="flex items-center gap-2 mb-2">
                         <Fingerprint className="h-4 w-4 text-primary" />
-                        <span className="text-[10px] font-black uppercase">Datos DIAN (Obligatorio)</span>
+                        <span className="text-[10px] font-black uppercase text-slate-600">Requerimientos DIAN</span>
                      </div>
                      
-                     <div className="grid gap-4">
-                        <div className="space-y-1.5">
-                           <Label className="text-[9px] font-black uppercase opacity-60">NIT / Cédula / Tax ID</Label>
-                           <Input disabled={!isElectronicEnabled} value={customerData.taxId} onChange={e => setCustomerData({...customerData, taxId: e.target.value})} className="h-10 text-[11px] font-bold rounded-lg" placeholder="Ej: 900.123.456-1" />
+                     <div className="grid gap-3">
+                        <div className="space-y-1">
+                           <Label className="text-[8px] font-black uppercase opacity-60">NIT / Cédula</Label>
+                           <Input disabled={!isElectronicEnabled} value={customerData.taxId} onChange={e => setCustomerData({...customerData, taxId: e.target.value})} className="h-9 text-[10px] font-bold rounded-lg border-slate-200" placeholder="000000000" />
                         </div>
-                        <div className="space-y-1.5">
-                           <Label className="text-[9px] font-black uppercase opacity-60">Razón Social / Nombre</Label>
-                           <Input disabled={!isElectronicEnabled} value={customerData.name} onChange={e => setCustomerData({...customerData, name: e.target.value})} className="h-10 text-[11px] font-bold rounded-lg" placeholder="Ej: Juan Pérez S.A.S" />
+                        <div className="space-y-1">
+                           <Label className="text-[8px] font-black uppercase opacity-60">Razón Social</Label>
+                           <Input disabled={!isElectronicEnabled} value={customerData.name} onChange={e => setCustomerData({...customerData, name: e.target.value})} className="h-9 text-[10px] font-bold rounded-lg border-slate-200" placeholder="Nombre completo" />
                         </div>
-                        <div className="space-y-1.5">
-                           <Label className="text-[9px] font-black uppercase opacity-60">Email Notificación</Label>
-                           <Input disabled={!isElectronicEnabled} value={customerData.email} onChange={e => setCustomerData({...customerData, email: e.target.value})} className="h-10 text-[11px] font-bold rounded-lg" placeholder="facturacion@empresa.com" />
+                        <div className="space-y-1">
+                           <Label className="text-[8px] font-black uppercase opacity-60">Email Notificación</Label>
+                           <Input disabled={!isElectronicEnabled} value={customerData.email} onChange={e => setCustomerData({...customerData, email: e.target.value})} className="h-9 text-[10px] font-bold rounded-lg border-slate-200" placeholder="correo@ejemplo.com" />
                         </div>
-                        <div className="space-y-1.5">
-                           <Label className="text-[9px] font-black uppercase opacity-60">Dirección</Label>
-                           <Input disabled={!isElectronicEnabled} value={customerData.address} onChange={e => setCustomerData({...customerData, address: e.target.value})} className="h-10 text-[11px] font-bold rounded-lg" placeholder="Calle 123 #45-67" />
+                        <div className="space-y-1">
+                           <Label className="text-[8px] font-black uppercase opacity-60">Dirección</Label>
+                           <Input disabled={!isElectronicEnabled} value={customerData.address} onChange={e => setCustomerData({...customerData, address: e.target.value})} className="h-9 text-[10px] font-bold rounded-lg border-slate-200" placeholder="Dirección física" />
                         </div>
                      </div>
                   </div>
