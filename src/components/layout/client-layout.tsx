@@ -59,6 +59,7 @@ function ThemeToggle() {
 
 function MobileBottomNav() {
   return null;
+}
 
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();

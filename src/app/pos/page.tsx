@@ -41,7 +41,12 @@ import {
   Download,
   PenLine,
   PlusCircle,
-  Clock
+  Clock,
+  Bell,
+  Pause,
+  Play,
+  Settings,
+  GripHorizontal
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -55,7 +60,14 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetDescription 
+} from "@/components/ui/sheet"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
 import { collection, query, where, doc, updateDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
@@ -133,15 +145,18 @@ export default function POSPage() {
   const [baseCaja, setBaseCaja] = useState("")
   const [isCierreLoading, setIsCierreLoading] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  // Cuentas en Espera State
+  const [showPendingDrawer, setShowPendingDrawer] = useState(false)
+  const [pendingAccounts, setPendingAccounts] = useState<any[]>([])
+  const [pendingNote, setPendingNote] = useState("")
+  const [showPendingNoteModal, setShowPendingNoteModal] = useState(false)
+  const [selectedPendingAccount, setSelectedPendingAccount] = useState<any>(null)
 
-  // Update time every minute for table timers
+  // Update time every second for pending account timers
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(Date.now())
-    }, 60000) // Update every minute
+    }, 1000)
     return () => clearInterval(interval)
   }, [])
 
@@ -432,6 +447,10 @@ export default function POSPage() {
     ? directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15 
     : (selectedOrder?.total || 0)
 
+  const currentSubtotal = directCart.length > 0 
+    ? directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0)
+    : 0
+
   const openCierreCaja = () => {
     const openOrdersCount = activeOrders?.length || 0
     if (openOrdersCount > 0) {
@@ -622,6 +641,35 @@ export default function POSPage() {
               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[8px] font-black text-slate-400 uppercase">DIAN</span>
             </div>
+            <button
+              onClick={() => setShowPendingDrawer(true)}
+              className={cn(
+                "flex items-center gap-2 h-10 px-4 rounded-full font-black text-[8px] uppercase tracking-wider transition-all relative",
+                pendingAccounts.length === 0 
+                  ? "bg-slate-800 text-slate-500 opacity-50 cursor-not-allowed" 
+                  : pendingAccounts.some(p => {
+                      const elapsed = (Date.now() - new Date(p.createdAt).getTime()) / 60000
+                      return elapsed > 15
+                    })
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-amber-500 text-white hover:bg-amber-600"
+              )}
+              disabled={pendingAccounts.length === 0}
+            >
+              <Pause className="h-3.5 w-3.5" />
+              <span>En Espera</span>
+              {pendingAccounts.length > 0 && (
+                <span className="h-5 w-5 rounded-full bg-white text-amber-600 text-[8px] font-black flex items-center justify-center">
+                  {pendingAccounts.length}
+                </span>
+              )}
+              {pendingAccounts.some(p => {
+                const elapsed = (Date.now() - new Date(p.createdAt).getTime()) / 60000
+                return elapsed > 15
+              }) && (
+                <Bell className="h-3.5 w-3.5 animate-pulse" />
+              )}
+            </button>
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-blue-500" />
               <span className="text-[8px] font-black text-slate-400 uppercase">Caja</span>
@@ -903,13 +951,28 @@ export default function POSPage() {
             <span className="text-2xl font-black text-primary">{formatCurrencyDetailed(currentTotal * 1.15)}</span>
           </div>
           
-          <Button 
-            className="w-full h-12 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20"
-            disabled={currentTotal === 0 || isFinishing || (isElectronic && (!customerData.name || !customerData.taxId))}
-            onClick={handleFinalizeInvoice}
-          >
-            {isFinishing ? <Loader2 className="animate-spin h-5 w-5" /> : "Cobrar"}
-          </Button>
+          <div className="flex gap-2">
+            {(directCart.length > 0 || selectedOrder) && (
+              <Button 
+                variant="outline"
+                className="h-12 bg-amber-500 hover:bg-amber-600 border-amber-500 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20"
+                onClick={() => {
+                  setSelectedPendingAccount(null)
+                  setShowPendingNoteModal(true)
+                }}
+              >
+                <Pause className="h-4 w-4 mr-2" />
+                En Espera
+              </Button>
+            )}
+            <Button 
+              className="flex-1 h-12 bg-primary hover:bg-primary/90 text-white rounded-xl font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20"
+              disabled={currentTotal === 0 || isFinishing || (isElectronic && (!customerData.name || !customerData.taxId))}
+              onClick={handleFinalizeInvoice}
+            >
+              {isFinishing ? <Loader2 className="animate-spin h-5 w-5" /> : "Cobrar"}
+            </Button>
+          </div>
         </CardFooter>
       </div>
 
@@ -1244,6 +1307,237 @@ export default function POSPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Accounts Drawer */}
+      <Sheet open={showPendingDrawer} onOpenChange={setShowPendingDrawer}>
+        <SheetContent className="w-[400px] sm:w-[540px] p-0 bg-white border-l border-slate-200">
+          <SheetHeader className="px-4 py-3 border-b border-slate-100 bg-slate-50 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SheetTitle className="text-lg font-black uppercase text-slate-900">Cuentas en Espera</SheetTitle>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[8px] font-black">
+                  {pendingAccounts.length}
+                </Badge>
+              </div>
+              <button onClick={() => setShowPendingDrawer(false)} className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center">
+                <X className="h-4 w-4 text-slate-400" />
+              </button>
+            </div>
+            <SheetDescription className="text-[9px] text-slate-500">Ventas rápidas pendientes de pago</SheetDescription>
+          </SheetHeader>
+          
+          <div className="p-4 border-b border-slate-100 bg-white shrink-0">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                <Input 
+                  placeholder="Buscar cuenta..." 
+                  className="pl-9 h-10 bg-slate-50 border-slate-200 text-slate-700 text-xs rounded-lg"
+                />
+              </div>
+              <Button className="h-10 px-4 bg-primary text-white rounded-lg font-black text-[8px] uppercase">
+                <Plus className="h-3 w-3 mr-1" /> Nueva Venta
+              </Button>
+            </div>
+          </div>
+
+          <ScrollArea className="flex-1 h-[calc(100vh-220px)]">
+            <div className="p-4 space-y-3">
+              {pendingAccounts.length === 0 ? (
+                <div className="py-12 text-center">
+                  <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <Clock className="h-8 w-8 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-black text-slate-400 uppercase">Sin cuentas en espera</p>
+                  <p className="text-[9px] text-slate-300 mt-1">Las cuentas pendientes aparecerán aquí</p>
+                </div>
+              ) : (
+                pendingAccounts
+                  .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+                  .map((account) => {
+                    const elapsed = (Date.now() - new Date(account.createdAt).getTime()) / 60000
+                    const isUrgent = elapsed > 15
+                    const isWarning = elapsed > 10 && elapsed <= 15
+                    
+                    return (
+                      <div 
+                        key={account.id}
+                        className={cn(
+                          "p-4 rounded-xl border-2 transition-all",
+                          isUrgent ? "bg-red-50 border-red-300" : 
+                          isWarning ? "bg-amber-50 border-amber-300" :
+                          "bg-white border-slate-200"
+                        )}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className={cn("h-4 w-4", isUrgent ? "text-red-500" : isWarning ? "text-amber-500" : "text-emerald-500")} />
+                            <span className="text-[10px] font-black text-slate-600 uppercase">
+                              {Math.floor(elapsed)}:{String(Math.floor((elapsed % 1) * 60)).padStart(2, '0')}
+                            </span>
+                          </div>
+                          {isUrgent && (
+                            <Badge className="bg-red-500 text-white text-[7px] font-black animate-pulse">
+                              TIEMPO EXCEDIDO
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="text-sm font-black text-slate-900">{account.clientName || `Cliente #${account.clientNumber}`}</p>
+                            <p className="text-[9px] text-slate-400">{account.items?.length || 0} items</p>
+                          </div>
+                          <p className="text-lg font-black text-primary">{formatCurrencyDetailed(account.total)}</p>
+                        </div>
+                        
+                        {account.note && (
+                          <p className="text-[9px] text-slate-500 italic mb-3">"{account.note}"</p>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="flex-1 h-9 rounded-lg border-slate-200 text-[8px] font-black uppercase"
+                            onClick={() => {
+                              setSelectedPendingAccount(account)
+                              setDirectCart(account.items || [])
+                              setSelectedOrder(null)
+                              setShowPendingDrawer(false)
+                              toast({ title: "Cuenta retomada", description: `Cliente #${account.clientNumber}` })
+                            }}
+                          >
+                            <Play className="h-3 w-3 mr-1" /> Retomar
+                          </Button>
+                          <Button 
+                            size="sm"
+                            className="flex-1 h-9 bg-primary rounded-lg text-white text-[8px] font-black uppercase"
+                            onClick={() => {
+                              setSelectedPendingAccount(account)
+                              setShowPendingNoteModal(true)
+                            }}
+                          >
+                            <Banknote className="h-3 w-3 mr-1" /> Cobrar
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-9 w-9 text-red-400 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              setPendingAccounts(prev => prev.filter(p => p.id !== account.id))
+                              toast({ title: "Cuenta cancelada", description: "La cuenta ha sido eliminada" })
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })
+              )}
+            </div>
+          </ScrollArea>
+
+          {pendingAccounts.length > 0 && (
+            <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[9px] font-black text-slate-500 uppercase">Total en espera</span>
+                <span className="text-sm font-black text-slate-700">{pendingAccounts.length} cuentas</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[9px] font-black text-slate-500 uppercase">Monto total</span>
+                <span className="text-lg font-black text-primary">
+                  {formatCurrencyDetailed(pendingAccounts.reduce((sum, a) => sum + (a.total || 0), 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Pending Note Modal */}
+      <Dialog open={showPendingNoteModal} onOpenChange={setShowPendingNoteModal}>
+        <DialogContent className="max-w-sm rounded-2xl p-6 bg-white border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-black uppercase flex items-center gap-2">
+              <Pause className="h-4 w-4 text-amber-500" />
+              Poner Cuenta en Espera
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {selectedPendingAccount && (
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-slate-500 uppercase">Total</span>
+                  <span className="font-black text-primary">{formatCurrencyDetailed(selectedPendingAccount.total)}</span>
+                </div>
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-slate-500 uppercase">Items</span>
+                  <span className="font-black text-slate-700">{selectedPendingAccount.items?.length || 0}</span>
+                </div>
+              </div>
+            )}
+            <div>
+              <Label className="text-[9px] font-black uppercase text-slate-500">Nota (opcional)</Label>
+              <Input 
+                placeholder="Ej: Cliente fue al baño" 
+                value={pendingNote}
+                onChange={(e) => setPendingNote(e.target.value)}
+                className="h-10 mt-1 rounded-lg text-xs"
+                maxLength={50}
+              />
+              <p className="text-[8px] text-slate-400 mt-1 text-right">{pendingNote.length}/50</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="ghost" 
+              className="flex-1 h-10 font-black text-[9px] uppercase"
+              onClick={() => {
+                setShowPendingNoteModal(false)
+                setPendingNote("")
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              className="flex-1 h-10 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-black text-[9px] uppercase"
+              onClick={() => {
+                if (selectedPendingAccount) {
+                  setPendingAccounts(prev => prev.map(p => 
+                    p.id === selectedPendingAccount.id 
+                      ? { ...p, note: pendingNote, updatedAt: Date.now() }
+                      : p
+                  ))
+                } else {
+                  const newAccount = {
+                    id: `pending_${Date.now()}`,
+                    clientNumber: pendingAccounts.length + 1,
+                    clientName: null,
+                    items: directCart,
+                    total: currentSubtotal,
+                    note: pendingNote,
+                    createdAt: new Date().toISOString(),
+                    createdBy: user?.email
+                  }
+                  setPendingAccounts([...pendingAccounts, newAccount])
+                  setDirectCart([])
+                }
+                setShowPendingNoteModal(false)
+                setPendingNote("")
+                setSelectedPendingAccount(null)
+                toast({ 
+                  title: pendingAccounts.length > 0 ? "Nota actualizada" : "Cuenta en espera", 
+                  description: pendingAccounts.length > 0 ? "La nota ha sido guardada" : `Cliente #${pendingAccounts.length + 1}` 
+                })
+              }}
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
