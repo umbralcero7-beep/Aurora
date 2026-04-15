@@ -96,6 +96,11 @@ export default function POSPage() {
   const router = useRouter()
   
   const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const categories = ["Todos", "Entradas", "Platos Fuertes", "Bebidas", "Postres"]
   
   const [activeTab, setActiveTab] = useState("direct") 
