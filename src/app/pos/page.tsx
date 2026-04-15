@@ -66,7 +66,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, where, doc, setDoc } from "firebase/firestore"
+import { collection, query, where, doc, setDoc, orderBy, limit, getDocs, addDoc, updateDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { useRouter } from "next/navigation"

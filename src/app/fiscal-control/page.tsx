@@ -32,7 +32,8 @@ import {
   MinusCircle,
   ArrowRight,
   RotateCcw,
-  Lock
+  Lock,
+  Search
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { 
@@ -56,7 +57,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useLanguage } from "@/context/language-context"
 import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc, useAuth } from "@/firebase"
-import { collection, query, orderBy, getDocs, where, doc, setDoc, limit } from "firebase/firestore"
+import { collection, query, where, doc, setDoc, orderBy, limit, getDocs, addDoc, updateDoc } from "firebase/firestore"
 import { signOut } from "firebase/auth"
 import { format } from "date-fns"
 import { es, enUS } from "date-fns/locale"

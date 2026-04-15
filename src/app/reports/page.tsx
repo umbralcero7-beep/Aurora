@@ -59,7 +59,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useFirestore, useMemoFirebase, useUser, useDoc, useCollection } from "@/firebase"
-import { collection, query, where, orderBy, doc, limit } from "firebase/firestore"
+import { collection, query, where, orderBy, limit, doc, setDoc, getDocs, addDoc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { analyzeInventory } from "@/ai/flows/inventory-analyst-flow"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import * as XLSX from 'xlsx'

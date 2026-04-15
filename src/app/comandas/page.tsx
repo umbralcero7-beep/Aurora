@@ -36,7 +36,7 @@ import {
   SheetTrigger 
 } from "@/components/ui/sheet"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, where, orderBy, limit, doc, setDoc } from "firebase/firestore"
+import { collection, query, where, orderBy, limit, doc, setDoc, getDocs, addDoc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { errorEmitter } from "@/firebase/error-emitter"

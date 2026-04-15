@@ -54,7 +54,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog"
 import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, where, doc } from "firebase/firestore"
+import { collection, query, orderBy, where, doc, limit, getDocs, addDoc, updateDoc } from "firebase/firestore"
 import { useLanguage } from "@/context/language-context"
 import { format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
