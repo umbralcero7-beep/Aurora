@@ -58,60 +58,7 @@ function ThemeToggle() {
 }
 
 function MobileBottomNav() {
-  const pathname = usePathname();
-  const { user } = useUser();
-  const db = useFirestore();
-  const { t } = useLanguage();
-  
-  const userProfileRef = useMemoFirebase(() => {
-    if (!db || !user?.email) return null;
-    return doc(db, "users", user.email.toLowerCase());
-  }, [db, user?.email]);
-
-  const { data: profile } = useDoc(userProfileRef);
-  
-  const isSuper = isSuperUser(user?.email);
-  const role = isSuper ? 'SUPPORT' : (profile?.role || 'WAITER');
-
-  const allNavItems = [
-    { icon: LayoutDashboard, label: t.nav.dashboard, url: '/', roles: ['ADMIN', 'SUPPORT', 'FINANCE', 'INVENTORY', 'RECEPTIONIST'] },
-    { icon: ShoppingCart, label: t.nav.waiterOrders, url: '/comandas', roles: ['ADMIN', 'WAITER', 'SUPPORT'] },
-    { icon: Receipt, label: t.nav.pos, url: '/pos', roles: ['ADMIN', 'CASHIER', 'SUPPORT'] },
-    { icon: ChefHat, label: t.nav.orders, url: '/orders', roles: ['ADMIN', 'CHEF', 'SUPPORT'] },
-    { icon: TrendingUp, label: t.nav.reports, url: '/reports', roles: ['ADMIN', 'SUPPORT', 'FINANCE'] },
-    { icon: Truck, label: t.nav.deliveries, url: '/deliveries', roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT'] },
-    { icon: Settings, label: t.nav.settings, url: '/settings', roles: ['ADMIN', 'SUPPORT'] },
-  ];
-
-  const navItems = allNavItems.filter(item => item.roles.includes(role)).slice(0, 5);
-
-  if (navItems.length === 0) return null;
-
-  return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-slate-100/80 flex items-center justify-around z-50 safe-area-bottom" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', height: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
-      {navItems.map((item) => {
-        const isActive = pathname === item.url;
-        return (
-          <Link key={item.url} href={item.url} className={cn(
-            "flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 transition-all active:scale-90",
-            isActive ? "text-primary" : "text-slate-400"
-          )}>
-            <div className={cn(
-              "flex items-center justify-center rounded-xl transition-all",
-              isActive ? "bg-primary/[0.08]" : ""
-            )}>
-              <item.icon className={cn("h-[20px] w-[20px]", isActive ? "stroke-[2.2px]" : "stroke-[1.6px]")} />
-            </div>
-            <span className={cn(
-              "text-[7px] uppercase tracking-[0.06em] font-semibold",
-              isActive ? "text-primary" : "text-slate-400"
-            )}>{item.label}</span>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
+  return null;
 
 function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
