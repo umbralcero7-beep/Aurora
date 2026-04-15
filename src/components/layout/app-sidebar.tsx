@@ -147,12 +147,12 @@ export function AppSidebar() {
       items: [
         { title: t.nav.pos, url: "/pos", icon: Receipt, roles: ['ADMIN', 'CASHIER', 'SUPPORT'] },
         { title: t.nav.deliveries, url: "/deliveries", icon: Truck, roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT'] },
+        { title: t.unified.service, url: "/orders", icon: ChefHat, roles: ['ADMIN', 'CHEF', 'WAITER', 'SUPPORT'] },
       ],
     },
     {
       label: t.navGroups.middle,
       items: [
-        { title: t.unified.service, url: "/orders", icon: ChefHat, roles: ['ADMIN', 'CHEF', 'WAITER', 'SUPPORT'] },
         { title: t.unified.inventory, url: "/inventory", icon: Package, roles: ['ADMIN', 'SUPPORT', 'INVENTORY', 'CHEF'] },
       ],
     },
