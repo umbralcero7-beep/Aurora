@@ -26,7 +26,8 @@ import {
   History,
   CheckCircle2,
   Utensils,
-  ReceiptText
+  ReceiptText,
+  Users
 } from "lucide-react"
 import { 
   Card, 
