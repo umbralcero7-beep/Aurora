@@ -31,6 +31,8 @@ import { useLanguage } from '@/context/language-context';
 import { ThemeProvider } from '@/components/theme-provider';
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
+import { DianSyncService } from '@/components/services/dian-sync-service';
+import { OfflineBunkerService } from '@/components/services/offline-bunker-service';
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -67,9 +69,19 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Registrar Service Worker para PWA
     if ('serviceWorker' in navigator) {
@@ -89,12 +101,23 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
       window.addEventListener('aurora:toggle-offline' as any, handleSimulatedOffline);
 
       return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.removeEventListener('online', handleStatus);
         window.removeEventListener('offline', handleStatus);
         window.removeEventListener('aurora:toggle-offline' as any, handleSimulatedOffline);
       };
     }
   }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setIsInstallable(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
@@ -161,20 +184,53 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-1.5 md:gap-2">
+              {isInstallable && (
+                <button 
+                  onClick={handleInstallClick}
+                  className="px-2 py-0.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-full text-[6px] font-black uppercase tracking-widest transition-all mr-1"
+                >
+                  Instalar App
+                </button>
+              )}
               <ThemeToggle />
-              <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-50 rounded-full border border-slate-100">
+              
+              <div 
+                className={cn(
+                  "flex items-center gap-1 px-1.5 py-0.5 rounded-full border transition-all cursor-default",
+                  isOnline ? "bg-slate-50 border-slate-100" : "bg-orange-500 border-orange-400 shadow-lg shadow-orange-500/20"
+                )}
+                title={isOnline ? "Conectado al Servidor" : "Modo Bnker Activo (Local)"}
+              >
                 {isOnline ? (
                   <Wifi className="h-2 w-2.5 text-emerald-500" />
                 ) : (
-                  <WifiOff className="h-2 w-2.5 text-orange-500 animate-pulse" />
+                  <div className="flex items-center gap-1">
+                    <ShieldCheck className="h-2 w-2.5 text-white" />
+                    <button 
+                      onClick={() => {
+                        // Lgica simple para descargar respaldo crtico en bnker
+                        const criticalData = { timestamp: new Date().toISOString(), platform: 'Aurora OS' };
+                        const blob = new Blob([JSON.stringify(criticalData)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `aurora-bunker-backup-${Date.now()}.json`;
+                        a.click();
+                      }}
+                      className="text-[5px] font-black text-white underline decoration-white/30"
+                    >
+                      Bajar Respaldo
+                    </button>
+                  </div>
                 )}
                 <span className={cn(
                   "text-[6px] font-black uppercase tracking-widest",
-                  isOnline ? "text-emerald-600" : "text-orange-600"
+                  isOnline ? "text-emerald-600" : "text-white"
                 )}>
-                  {isOnline ? 'Online' : 'Local'}
+                  {isOnline ? 'Online' : 'Bnker'}
                 </span>
               </div>
+
               <button 
                 onClick={() => router.push('/settings/profile')} 
                 className="h-6 w-6 md:h-7 md:w-7 bg-slate-100/50 hover:bg-white rounded-md flex items-center justify-center transition-all border border-slate-200/50"
@@ -211,6 +267,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       <FirebaseClientProvider>
         <LanguageProvider>
           <AuthWrapper>
+            <DianSyncService />
+            <OfflineBunkerService />
             {children}
           </AuthWrapper>
         </LanguageProvider>

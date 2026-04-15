@@ -52,6 +52,7 @@ import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@
 import { collection, query, orderBy, limit, updateDoc, doc, where, getDocs, getDoc, setDoc } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
+import { useBunker } from "@/components/services/offline-bunker-service"
 import { formatDistanceToNow, format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
 import { errorEmitter } from "@/firebase/error-emitter"
@@ -359,6 +360,9 @@ export default function DeliveriesPage() {
       createdAt: new Date().toISOString(),
       registeredBy: user?.email || "System"
     };
+
+    const { captureInBunker } = useBunker();
+    captureInBunker('delivery', orderData);
 
     setDoc(deliveryRef, orderData)
       .then(() => {

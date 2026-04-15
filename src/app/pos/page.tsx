@@ -70,6 +70,7 @@ import { collection, query, where, doc, setDoc, orderBy, limit, getDocs, addDoc,
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useBunker } from "@/components/services/offline-bunker-service"
 
 interface CartItem {
   id: string
@@ -265,7 +266,10 @@ export default function POSPage() {
       legalStatus: isElectronicEnabled ? 'PENDING_DIAN' : 'SIMPLIFIED'
     }
 
+    const { captureInBunker } = useBunker()
+
     try {
+      captureInBunker('invoice', invoiceData)
       await setDoc(invoiceRef, invoiceData)
       toast({ title: "PAGO EXITOSO", description: "Venta registrada correctamente" })
       setSelectedOrder(null)

@@ -61,6 +61,7 @@ import { collection, query, where, doc, setDoc, orderBy, limit, getDocs, addDoc,
 import { signOut } from "firebase/auth"
 import { format } from "date-fns"
 import { es, enUS } from "date-fns/locale"
+import { BunkerAISync } from "@/components/maintenance/bunker-ai-sync"
 import { 
   Dialog, 
   DialogContent, 
@@ -567,10 +568,11 @@ export default function FiscalControlPage() {
             </select>
           )}
           <div className="flex gap-3">
-            <Button variant="outline" className="rounded-xl h-12 border-primary text-primary font-black text-[9px] uppercase tracking-widest px-6" onClick={() => generateReport('X')}>
+            <BunkerAISync />
+            <Button variant="outline" className="rounded-xl h-10 border-primary text-primary font-black text-[9px] uppercase tracking-widest px-6" onClick={() => generateReport('X')}>
               <Zap className="mr-2 h-4 w-4" /> Reporte Parcial (X)
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 rounded-xl h-12 font-black text-[9px] uppercase tracking-widest px-8 shadow-xl shadow-primary/20" onClick={() => generateReport('Z')}>
+            <Button className="bg-primary hover:bg-primary/90 rounded-xl h-10 font-black text-[9px] uppercase tracking-widest px-8 shadow-xl shadow-primary/20" onClick={() => generateReport('Z')}>
               <ShieldCheck className="mr-2 h-4 w-4" /> Cerrar Jornada (Z)
             </Button>
           </div>

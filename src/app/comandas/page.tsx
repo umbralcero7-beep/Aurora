@@ -39,6 +39,7 @@ import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@
 import { collection, query, where, orderBy, limit, doc, setDoc, getDocs, addDoc, updateDoc, serverTimestamp } from "firebase/firestore"
 import { useToast } from "@/hooks/use-toast"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
+import { useBunker } from "@/components/services/offline-bunker-service"
 import { errorEmitter } from "@/firebase/error-emitter"
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from "@/firebase/errors"
 
@@ -161,23 +162,13 @@ export default function ComandasPage() {
       waiterName: (profile?.displayName || user?.email?.split('@')[0] || 'Mesero').toUpperCase()
     }
 
-    setDoc(orderRef, orderData)
-      .catch(async (err) => {
-        if (isOfflineError(err)) {
-          errorEmitter.emit('offline-error', new FirestoreOfflineError({
-            path: orderRef.path,
-            operation: 'create',
-          }));
-        } else {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: orderRef.path,
-            operation: 'create',
-            requestResourceData: orderData
-          }));
-        }
-      })
+    const { captureInBunker } = useBunker();
+    captureInBunker('order', orderData);
 
-    toast({ title: "¡Éxito!", description: `Comanda #${orderNumber} enviada.` })
+    setDoc(orderRef, orderData)
+      .then(() => {
+        toast({ title: "¡Éxito!", description: `Comanda #${orderNumber} enviada.` })
+      })
     setCart([])
     setSelectedTable(null)
     setGuestCount(1)
