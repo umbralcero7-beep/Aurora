@@ -276,11 +276,14 @@ export default function POSPage() {
       {/* ═══ Header Compacto (fit focus) ═══ */}
       <header className="h-16 bg-primary border-b border-primary-foreground/10 px-4 flex items-center justify-between shadow-md shrink-0">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-             <div className="h-8 w-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+          <div className="flex items-center gap-3">
+             <div className="h-9 w-9 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
                 <Zap className="h-5 w-5 text-primary" />
              </div>
-             <h1 className="text-sm font-black uppercase tracking-tighter text-white">Aurora POS</h1>
+             <div className="flex flex-col leading-none">
+               <span className="text-[10px] font-black text-white uppercase tracking-tighter">{effectiveVenueName}</span>
+               <span className="text-[7px] font-bold text-white/50 uppercase tracking-[0.2em] mt-0.5">Terminal Live</span>
+             </div>
           </div>
 
           <div className="h-6 w-px bg-white/20 mx-1 hidden sm:block" />
