@@ -237,6 +237,7 @@ export default function DeliveriesPage() {
   const total = subtotal + shipping
 
   const handlePrint = (order: any) => {
+    // Si ya es un re-impreso (manual desde el botón), pedimos PIN
     if (profile?.role !== 'ADMIN' && profile?.role !== 'SUPPORT' && !isSuper) {
       setPrintingOrder(order)
       setShowPasswordDialog(true)
@@ -249,37 +250,51 @@ export default function DeliveriesPage() {
     if (typeof window === 'undefined') return;
     const windowPrint = window.open('', '', 'width=600,height=800');
     if (windowPrint) {
-      const ticketContent = (title: string) => `
-        <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 10px; text-align: center;">
-          <div style="font-size: 10px; font-weight: bold; margin-bottom: 5px;">*** ${title} ***</div>
-          <div style="font-size: 24px; font-weight: bold;">#DOM-${order.orderNumber}</div>
-          <div style="text-transform: uppercase; font-weight: bold; margin-top: 5px;">${order.assignedVenue || effectiveVenueName}</div>
-          <div style="font-size: 10px; margin-top: 2px;">FECHA: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+      const ticketContent = (title: string, sub: string) => `
+        <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; text-align: center;">
+          <div style="font-size: 11px; font-weight: 900; background: #000; color: #fff; padding: 4px; border-radius: 4px; margin-bottom: 8px;">${title}</div>
+          <div style="font-size: 28px; font-weight: 900; letter-spacing: -1px;">#DOM-${order.orderNumber}</div>
+          <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; margin-top: 5px;">${order.assignedVenue || effectiveVenueName}</div>
+          <div style="font-size: 9px; margin-top: 2px; color: #666;">AUTORIZADO: ${format(new Date(), 'dd/MM HH:mm')}</div>
         </div>
-        <div style="margin-bottom: 15px; font-size: 13px; line-height: 1.4;">
-          <strong>CLIENTE:</strong> ${order.customerName.toUpperCase()}<br>
-          <strong>TELÉFONO:</strong> ${order.phone}<br>
-          <strong>DIRECCIÓN:</strong> ${order.address.toUpperCase()}
+        <div style="margin-bottom: 20px; font-size: 13px; line-height: 1.5; border-left: 3px solid #000; padding-left: 10px;">
+          <div style="font-size: 9px; font-weight: 900; color: #333;">DESTINATARIO:</div>
+          <div style="font-weight: 900; font-size: 16px;">${order.customerName.toUpperCase()}</div>
+          <div style="font-weight: 900;">${order.phone}</div>
+          <div style="font-weight: 900; margin-top: 5px;">📍 ${order.address.toUpperCase()}</div>
+          ${order.notes ? `<div style="font-size: 10px; font-style: italic; color: #444; border-top: 1px dashed #ccc; margin-top: 5px; padding-top: 2px;">NOTA: ${order.notes.toUpperCase()}</div>` : ''}
         </div>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           ${order.items.map((i: any) => `
             <tr>
-              <td style="padding: 5px 0; font-size: 12px;">${i.quantity}x ${i.name.toUpperCase()}</td>
-              <td align="right">$${(i.price * i.quantity).toLocaleString()}</td>
+              <td style="padding: 6px 0; font-size: 13px; font-weight: 900;">${i.quantity}x ${i.name.toUpperCase()}</td>
+              <td align="right" style="font-size: 13px; font-weight: 900;">$${(i.price * i.quantity).toLocaleString()}</td>
             </tr>
           `).join('')}
+          ${order.shippingCost > 0 ? `
+            <tr>
+              <td style="padding-top: 10px; font-size: 11px; font-weight: 900;">COSTO ENVÍO</td>
+              <td align="right" style="padding-top: 10px; font-size: 11px; font-weight: 900;">$${order.shippingCost.toLocaleString()}</td>
+            </tr>
+          ` : ''}
         </table>
-        <div style="text-align: right; font-size: 18px; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px;">
-          TOTAL: $${order.total.toLocaleString()}
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 3px solid #000; padding-top: 10px;">
+          <div style="font-size: 11px; font-weight: 900; color: #444;">SALDO TOTAL</div>
+          <div style="font-size: 22px; font-weight: 900; letter-spacing: -0.5px;">$${order.total.toLocaleString()}</div>
+        </div>
+        <div style="text-align: center; margin-top: 20px; font-size: 9px; font-weight: 900; border: 1px solid #000; padding: 5px;">
+           ${sub}
         </div>
       `;
 
       windowPrint.document.write(`
         <html>
-          <body style="font-family: monospace; width: 300px;">
-            ${ticketContent("COPIA DOMICILIARIO")}
-            <div style="border-top: 2px dashed #000; margin: 40px 0;"></div>
-            ${ticketContent("COPIA RECEPCIÓN")}
+          <body style="font-family: 'Courier New', Courier, monospace; width: 280px; padding: 10px;">
+            ${ticketContent("COPIA DOMICILIARIO", "ENTREGAR AL CLIENTE AL LLEGAR")}
+            <div style="height: 60px;"></div>
+            <div style="border-top: 3px dashed #000; margin: 20px 0; padding-top: 20px;"></div>
+            ${ticketContent("COPIA RECEPCIÓN (POS)", "ARCHIVAR PARA CIERRE DE CAJA")}
+            <div style="height: 40px;"></div>
           </body>
         </html>
       `);
@@ -347,7 +362,8 @@ export default function DeliveriesPage() {
 
     setDoc(deliveryRef, orderData)
       .then(() => {
-        handlePrint(orderData);
+        // La primera impresión es automática y NO requiere PIN
+        executePrint(orderData);
         setIsRegisterOpen(false)
         setDeliveryData({ customerName: "", phone: "", address: "", notes: "" })
         setSelectedItems([])
