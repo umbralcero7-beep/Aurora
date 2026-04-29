@@ -122,6 +122,81 @@ export default function SettingsPage() {
   const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
   const effectiveVenueName = profile?.assignedVenue || (isSuper ? 'Matu' : 'Sede Central');
   const isSupport = profile?.role === 'SUPPORT' || isSuper;
+  const isAdmin = profile?.role === 'ADMIN' || isSuper;
+
+  // Personal/Usuarios Management State
+  const [allSystemUsers, setAllSystemUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserRole, setNewUserRole] = useState<string>("USER");
+  const [newUserVenue, setNewUserVenue] = useState("");
+
+  useEffect(() => {
+    if (db && (isSuper || isAdmin)) {
+      fetchUsers();
+    }
+  }, [db, isSuper, isAdmin]);
+
+  const fetchUsers = async () => {
+    if (!db) return;
+    setLoadingUsers(true);
+    try {
+      const q = isSuper 
+        ? query(collection(db, "users")) 
+        : query(collection(db, "users"), where("businessId", "==", profile?.businessId));
+      const snap = await getDocs(q);
+      setAllSystemUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!db || !newUserEmail) return;
+    setSaving(true);
+    try {
+      const email = newUserEmail.toLowerCase().trim();
+      await setDoc(doc(db, "users", email), {
+        email,
+        role: newUserRole,
+        assignedVenue: newUserVenue || "Sede Central",
+        businessId: profile?.businessId || "matu",
+        createdAt: serverTimestamp()
+      }, { merge: true });
+      toast({ title: "Usuario Creado", description: `El acceso para ${email} ha sido configurado.` });
+      setNewUserEmail("");
+      fetchUsers();
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error", description: "No se pudo crear el usuario." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (email: string) => {
+    if (!db || email === user?.email) return;
+    if (!confirm(`¿Seguro que deseas eliminar a ${email}?`)) return;
+    try {
+      await deleteDoc(doc(db, "users", email));
+      toast({ title: "Usuario Eliminado" });
+      fetchUsers();
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error" });
+    }
+  };
+
+  const handleUpdateRole = async (email: string, newRole: string) => {
+    if (!db) return;
+    try {
+      await setDoc(doc(db, "users", email), { role: newRole }, { merge: true });
+      toast({ title: "Rol Actualizado" });
+      fetchUsers();
+    } catch (e) {
+      toast({ variant: "destructive", title: "Error" });
+    }
+  };
 
   const [formData, setFormData] = useState({
     businessName: '',
@@ -427,10 +502,13 @@ export default function SettingsPage() {
 
         <div className="lg:col-span-3">
           <Tabs defaultValue="billing" className="w-full space-y-6">
-            <TabsList className="bg-slate-100 p-1.5 rounded-[1.5rem] h-14 w-full grid grid-cols-5 border border-slate-100 overflow-hidden">
+            <TabsList className={cn("bg-slate-100 p-1.5 rounded-[1.5rem] h-14 w-full grid border border-slate-100 overflow-hidden", isAdmin ? "grid-cols-6" : "grid-cols-5")}>
               <TabsTrigger value="business" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Negocio</TabsTrigger>
               <TabsTrigger value="billing" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Impuestos</TabsTrigger>
               <TabsTrigger value="dian" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">DIAN</TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="users" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Personal</TabsTrigger>
+              )}
               <TabsTrigger value="import" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Inyectar</TabsTrigger>
               <TabsTrigger value="maintenance" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Salud</TabsTrigger>
             </TabsList>
@@ -472,6 +550,91 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="users">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                <Card className="xl:col-span-1 rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl self-start">
+                   <CardHeader className="p-0 pb-6 mb-6 border-b border-slate-50">
+                      <CardTitle className="text-lg font-black uppercase text-slate-900 leading-none">Vincular Colaborador</CardTitle>
+                      <CardDescription className="text-[10px] uppercase font-bold text-slate-400 mt-2">Habilitar acceso operativo.</CardDescription>
+                   </CardHeader>
+                   <CardContent className="p-0 space-y-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Email</Label>
+                        <Input 
+                          placeholder="usuario@dominio.com" 
+                          className="h-12 rounded-xl bg-slate-50 border-none font-bold text-xs"
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase text-slate-400 ml-1">Rol Operativo</Label>
+                        <Select value={newUserRole} onValueChange={setNewUserRole}>
+                          <SelectTrigger className="h-12 rounded-xl bg-slate-50 border-none font-bold text-xs uppercase">
+                            <SelectValue placeholder="Seleccionar Rol" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-slate-100">
+                            <SelectItem value="USER">MESERO / OPERATIVO</SelectItem>
+                            <SelectItem value="ADMIN">ADMINISTRADOR</SelectItem>
+                            <SelectItem value="SUPPORT">SOPORTE TÉCNICO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button onClick={handleCreateUser} disabled={saving} className="w-full h-14 bg-primary rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20">
+                         {saving ? <Loader2 className="animate-spin" /> : "Vincular Cuenta"}
+                      </Button>
+                   </CardContent>
+                </Card>
+
+                <Card className="xl:col-span-2 rounded-[2rem] p-8 bg-white border-slate-100 shadow-xl overflow-hidden">
+                   <CardHeader className="p-0 pb-6 mb-6 border-b border-slate-50 flex flex-row justify-between items-center">
+                      <div>
+                        <CardTitle className="text-lg font-black uppercase text-slate-900">Roster de Personal</CardTitle>
+                        <CardDescription className="text-[10px] uppercase font-bold text-slate-400">Total: {allSystemUsers.length} colaboradores activos.</CardDescription>
+                      </div>
+                      <RefreshCw className={cn("h-4 w-4 text-slate-300 cursor-pointer", loadingUsers && "animate-spin")} onClick={fetchUsers} />
+                   </CardHeader>
+                   <CardContent className="p-0">
+                      <div className="max-h-[500px] overflow-y-auto pr-4">
+                        <Table>
+                          <TableBody>
+                            {allSystemUsers.map(u => (
+                              <TableRow key={u.id} className="hover:bg-slate-50 border-b border-slate-50 group">
+                                <TableCell className="py-4">
+                                  <div className="flex flex-col">
+                                    <span className="text-[11px] font-black uppercase text-slate-800 tracking-tight">{u.email}</span>
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{u.assignedVenue || 'Sede Central'}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Select value={u.role} onValueChange={(val) => handleUpdateRole(u.id, val)}>
+                                    <SelectTrigger className="h-8 w-32 border-none bg-slate-100/50 rounded-lg text-[9px] font-black uppercase tracking-widest px-2">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl">
+                                      <SelectItem value="USER">USER</SelectItem>
+                                      <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                      <SelectItem value="SUPPORT">SUPPORT</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {u.email !== user?.email && (
+                                    <Button onClick={() => handleDeleteUser(u.id)} variant="ghost" className="h-8 w-8 p-0 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                   </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="import" className="space-y-6">

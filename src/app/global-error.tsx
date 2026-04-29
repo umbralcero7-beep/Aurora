@@ -26,12 +26,27 @@ export default function GlobalError({
               {error.message || 'Ha ocurrido un error inesperado en la aplicación.'}
             </p>
           </div>
-          <button
-            onClick={reset}
-            className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-800 transition-colors"
-          >
-            Reintentar
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={reset}
+              className="px-4 py-2 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-800 transition-colors"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  // Limpiar persistencia de Firebase e IndexedDB en caso de corrupcin masiva
+                  window.localStorage.clear();
+                  window.indexedDB.deleteDatabase("firestore/[DEFAULT]/aurora-os/main");
+                  window.location.reload();
+                }
+              }}
+              className="px-4 py-2 bg-destructive/10 text-destructive text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-destructive/20 transition-colors"
+            >
+              Resetear y Limpiar
+            </button>
+          </div>
         </div>
       </body>
     </html>

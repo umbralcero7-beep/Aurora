@@ -3,6 +3,7 @@
 import { isSuperUser } from '@/lib/constants';
 import { useState, useMemo, useEffect } from "react"
 import { 
+  Activity,
   FileText, 
   Printer, 
   History, 
@@ -111,8 +112,8 @@ export default function FiscalControlPage() {
 
   const isSuper = isSuperUser(user?.email);
   const isAdmin = profile?.role === 'ADMIN' || isSuper;
-  const effectiveBusinessId = isSuper ? null : (profile?.businessId || (isSuper ? 'matu' : null));
-  const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
+  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
+  const effectiveVenueName = profile?.assignedVenue || (isSuper ? 'AURORA GLOBAL' : 'Sede Central');
 
   // Estados para Devoluciones (Admin Only)
   const [returnSearch, setReturnSearch] = useState("")
@@ -283,6 +284,83 @@ export default function FiscalControlPage() {
       itemSales: Object.values(itemMap).sort((a, b) => b.quantity - a.quantity)
     }
   }, [sessionInvoices, sessionDeliveries, sessionExpenses])
+
+  const waitersStats = useMemo(() => {
+    const map: Record<string, { total: number, count: number, average: number }> = {}
+    sessionInvoices.forEach(inv => {
+      const waiter = inv.waiterName || inv.cashierName || 'SISTEMA'
+      if (!map[waiter]) map[waiter] = { total: 0, count: 0, average: 0 }
+      map[waiter].total += Number(inv.total || 0)
+      map[waiter].count += 1
+    })
+    Object.keys(map).forEach(w => {
+      map[w].average = map[w].total / map[w].count
+    })
+    return map
+  }, [sessionInvoices])
+
+  const printInventoryChecklist = () => {
+    const windowPrint = window.open('', '', 'width=800,height=600');
+    if (windowPrint) {
+      const activeItemSales = stats.itemSales;
+      windowPrint.document.write(`
+        <html>
+          <head>
+            <title>Checklist Inventario - Aurora OS</title>
+            <style>
+              body { font-family: monospace; padding: 20px; color: #000; }
+              .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+              .section { margin-bottom: 20px; }
+              .section-title { font-weight: bold; text-decoration: underline; display: block; margin-bottom: 10px; font-size: 14px; }
+              table { width: 100%; border-collapse: collapse; }
+              table td { padding: 5px 0; border-bottom: 1px dotted #ccc; }
+              .footer { text-align: center; margin-top: 40px; font-size: 9px; border-top: 1px dashed #000; padding-top: 10px; opacity: 0.7; }
+              .check-row { padding: 8px 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; }
+              .sold-badge { font-weight: bold; font-size: 10px; background: #eee; padding: 2px 5px; border-radius: 4px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1 style="margin:0; font-size: 16px;">CHECKLIST INVENTARIO</h1>
+              <div style="font-size: 10px; text-transform: uppercase;">${effectiveVenueName}</div>
+              <div style="font-size: 11px; font-weight: bold; margin-top: 5px;">AUDITORÍA: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</div>
+            </div>
+
+            <div class="section">
+              <span class="section-title">VENTAS DE LA JORNADA</span>
+              <p style="font-size: 9px; font-style: italic; margin-bottom: 10px;">Verifique el stock físico restando estas cantidades:</p>
+              ${activeItemSales.length === 0 ? '<p style="text-align:center; opacity:0.5;">No hay ventas registradas.</p>' : 
+                activeItemSales.map((item: any) => `
+                  <div class="check-row">
+                    <span style="max-width: 180px;">[ ] ${item.name.toUpperCase()}</span>
+                    <span class="sold-badge">VENDIDO: ${item.quantity}</span>
+                  </div>
+                `).join('')
+              }
+            </div>
+
+            <div class="section" style="margin-top: 30px;">
+              <span class="section-title">FIRMAS DE AUDITORÍA</span>
+              <br><br>
+              __________________________<br>
+              RESPONSABLE DE CONTEO
+              <br><br><br>
+              __________________________<br>
+              ADMINISTRACIÓN
+            </div>
+
+            <div class="footer">
+              AURORA OS V4.5 • PROTOCOLO CERO SHIELD<br>
+              Umbral Cero - Soberanía Tecnológica
+            </div>
+          </body>
+        </html>
+      `);
+      windowPrint.document.close();
+      windowPrint.focus();
+      setTimeout(() => { windowPrint.print(); windowPrint.close(); }, 500);
+    }
+  }
 
   // Lógica de Devoluciones
   const handleFindInvoice = () => {
@@ -569,6 +647,9 @@ export default function FiscalControlPage() {
           )}
           <div className="flex gap-3">
             <BunkerAISync />
+            <Button variant="outline" className="rounded-xl h-10 border-slate-200 text-slate-600 font-black text-[9px] uppercase tracking-widest px-6" onClick={printInventoryChecklist}>
+              <Printer className="mr-2 h-4 w-4 text-primary" /> Inventario
+            </Button>
             <Button variant="outline" className="rounded-xl h-10 border-primary text-primary font-black text-[9px] uppercase tracking-widest px-6" onClick={() => generateReport('X')}>
               <Zap className="mr-2 h-4 w-4" /> Reporte Parcial (X)
             </Button>
@@ -580,6 +661,69 @@ export default function FiscalControlPage() {
       </div>
 
       <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        {/* ... (Existing Cards) ... */}
+      </div>
+
+      {/* Bitácora de Meseros (New Section) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        <Card className="lg:col-span-2 bg-white border-slate-100 shadow-xl rounded-[2rem] overflow-hidden">
+          <CardHeader className="p-8 border-b border-slate-50 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-black uppercase tracking-tight">Bitácora de Meseros</CardTitle>
+              <CardDescription className="text-[10px] uppercase font-bold tracking-widest mt-1">Productividad y Desempeño por Turno</CardDescription>
+            </div>
+            <Activity className="h-6 w-6 text-primary" />
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-slate-50/50">
+                <TableRow>
+                  <TableHead className="text-[9px] font-black uppercase px-8">Personal</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase text-center">Órdenes</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase text-right">Avg. Ticket</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase text-right px-8">Total Ventas</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(waitersStats).map(([name, data]) => (
+                  <TableRow key={name}>
+                    <TableCell className="px-8 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-[10px]">
+                          {name[0]}
+                        </div>
+                        <span className="text-[11px] font-black uppercase text-slate-700">{name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center text-[11px] font-bold text-slate-500">{data.count}</TableCell>
+                    <TableCell className="text-right text-[11px] font-black text-slate-500">{formatCurrencyDetailed(data.average)}</TableCell>
+                    <TableCell className="text-right px-8 text-sm font-black text-primary">{formatCurrencyDetailed(data.total)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Cero AI Insight for Waiters */}
+        <Card className="bg-slate-900 border-none shadow-2xl rounded-[2rem] p-8 text-white relative overflow-hidden h-full">
+           <div className="absolute bottom-0 right-0 w-40 h-40 bg-primary/20 rounded-full blur-3xl translate-y-1/2 translate-x-1/2" />
+           <CardHeader className="p-0 mb-6">
+              <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase mb-4 w-fit px-3">Cero Operative Core</Badge>
+              <CardTitle className="text-2xl font-black uppercase tracking-tight leading-none">Análisis por Personal</CardTitle>
+           </CardHeader>
+           <CardContent className="p-0 space-y-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                Bitácora activa basada en el rendimiento de ventas en tiempo real. Utilice estos datos para incentivar o ajustar las asignaciones de mesas.
+              </p>
+              <div className="pt-4 border-t border-white/5 space-y-3">
+                 <div className="flex items-center gap-3 text-[10px] font-black uppercase text-emerald-400">
+                    <TrendingUp className="h-3 w-3" /> Mayor Volumen: {Object.entries(waitersStats).sort((a,b) => b[1].total - a[1].total)[0]?.[0] || '---'}
+                 </div>
+              </div>
+           </CardContent>
+        </Card>
+      </div>
         <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2rem] p-2 relative overflow-hidden md:col-span-2">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <CardHeader className="pb-2">

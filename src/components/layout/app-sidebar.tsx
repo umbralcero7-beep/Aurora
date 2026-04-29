@@ -148,6 +148,7 @@ export function AppSidebar() {
         { title: t.nav.pos, url: "/pos", icon: Receipt, roles: ['ADMIN', 'CASHIER', 'SUPPORT'] },
         { title: t.nav.deliveries, url: "/deliveries", icon: Truck, roles: ['ADMIN', 'RECEPTIONIST', 'SUPPORT'] },
         { title: t.unified.service, url: "/orders", icon: ChefHat, roles: ['ADMIN', 'CHEF', 'WAITER', 'SUPPORT'] },
+        { title: t.nav.waiterOrders, url: "/comandas", icon: UtensilsCrossed, roles: ['ADMIN', 'WAITER', 'SUPPORT'] },
       ],
     },
     {

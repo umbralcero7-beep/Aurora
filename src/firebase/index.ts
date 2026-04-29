@@ -16,47 +16,47 @@ import {
 let sdkInstance: { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore } | null = null;
 
 export function initializeFirebase() {
-  // Patrón singleton para evitar múltiples inicializaciones en entornos SSR/HMR
+  const isBrowser = typeof window !== 'undefined';
+  
+  // 1. Patrn singleton para evitar mltiples inicializaciones
   if (sdkInstance) return sdkInstance;
 
+  // 2. Inicializar App
   let firebaseApp: FirebaseApp;
-  
-  if (!getApps().length) {
-    try {
-      firebaseApp = initializeApp(firebaseConfig);
-    } catch (e) {
-      firebaseApp = getApp();
-    }
+  const apps = getApps();
+  if (apps.length > 0) {
+    firebaseApp = apps[0];
   } else {
-    firebaseApp = getApp();
+    firebaseApp = initializeApp(firebaseConfig);
   }
 
-  const isBrowser = typeof window !== 'undefined';
+  // 3. Inicializar Firestore con Persistencia Robusta y Failover
   let firestore: Firestore;
+  
+  try {
+    // Intentamos recuperar instancia existente o inicializar con persistencia
+    firestore = getFirestore(firebaseApp);
+  } catch (e) {
+    // Si falla la recuperacin (no inicializado), intentamos inicializacin controlada
+    const cache = isBrowser 
+      ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+      : memoryLocalCache();
 
-  if (isBrowser) {
     try {
-      // Configuración de persistencia exclusiva para el navegador (Modo Offline)
       firestore = initializeFirestore(firebaseApp, {
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
+        localCache: cache,
       });
-    } catch (e) {
-      // Fallback si ya está inicializado o falla el acceso a IndexedDB
-      firestore = getFirestore(firebaseApp);
-    }
-  } else {
-    // Configuración para el servidor (SSR): Solo memoria para evitar errores de hidratación
-    try {
+    } catch (innerError) {
+      // FAILOVER CRTICO: Si la persistencia est corrupta (Assertion Failed), 
+      // forzamos el modo memoria para que la app no muera.
+      console.warn("Fallo persistencia Firestore, activando Failover de Memoria:", innerError);
       firestore = initializeFirestore(firebaseApp, {
         localCache: memoryLocalCache(),
       });
-    } catch (e) {
-      firestore = getFirestore(firebaseApp);
     }
   }
 
+  // 4. Configurar Instancia Global
   sdkInstance = {
     firebaseApp,
     auth: getAuth(firebaseApp),

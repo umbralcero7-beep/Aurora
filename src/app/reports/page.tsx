@@ -378,12 +378,6 @@ export default function ReportsPage() {
           <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1 italic">Inteligencia de Negocios Multi-Canal • {effectiveVenueName}</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="rounded-xl h-12 border-slate-200 font-black text-[9px] uppercase tracking-widest" onClick={printInventoryChecklist}>
-            <Printer className="mr-2 h-4 w-4 text-primary" /> Generar Checklist de Inventario
-          </Button>
-          <Button className="bg-secondary hover:bg-secondary/90 rounded-xl h-12 px-8 font-black text-[9px] uppercase tracking-widest shadow-xl shadow-secondary/20">
-            <Activity className="mr-2 h-4 w-4" /> Ejecutar Cierre Global
-          </Button>
         </div>
       </div>
 

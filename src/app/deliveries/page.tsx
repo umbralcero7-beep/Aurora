@@ -109,6 +109,7 @@ export default function DeliveriesPage() {
     setMounted(true)
   }, [])
 
+  const { captureInBunker } = useBunker()
   const userProfileRef = useMemoFirebase(() => {
     if (!db || !user?.email) return null;
     return doc(db, "users", user.email.toLowerCase());
@@ -361,7 +362,6 @@ export default function DeliveriesPage() {
       registeredBy: user?.email || "System"
     };
 
-    const { captureInBunker } = useBunker();
     captureInBunker('delivery', orderData);
 
     setDoc(deliveryRef, orderData)

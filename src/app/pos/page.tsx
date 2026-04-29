@@ -135,6 +135,7 @@ export default function POSPage() {
   const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
   const effectiveVenueName = profile?.assignedVenue || 'Sede Central';
 
+  const { captureInBunker } = useBunker()
   const openOrdersQuery = useMemoFirebase(() => {
     if (!db || !effectiveBusinessId) return null
     return query(collection(db, "orders"), where("businessId", "==", effectiveBusinessId))
@@ -266,7 +267,6 @@ export default function POSPage() {
       legalStatus: isElectronicEnabled ? 'PENDING_DIAN' : 'SIMPLIFIED'
     }
 
-    const { captureInBunker } = useBunker()
 
     try {
       captureInBunker('invoice', invoiceData)

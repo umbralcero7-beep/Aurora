@@ -55,6 +55,7 @@ export default function ComandasPage() {
   const { user } = useUser()
   const { toast } = useToast()
   
+  const { captureInBunker } = useBunker()
   const [mounted, setMounted] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [cart, setCart] = useState<CartItem[]>([])
@@ -162,7 +163,6 @@ export default function ComandasPage() {
       waiterName: (profile?.displayName || user?.email?.split('@')[0] || 'Mesero').toUpperCase()
     }
 
-    const { captureInBunker } = useBunker();
     captureInBunker('order', orderData);
 
     setDoc(orderRef, orderData)
