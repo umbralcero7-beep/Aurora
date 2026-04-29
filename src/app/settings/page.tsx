@@ -434,11 +434,14 @@ export default function SettingsPage() {
       const collectionName = activeImportType === 'menu' ? "menu" : "supplies";
       for (const item of previewData) {
         const dataToSave = activeImportType === 'menu' ? {
-          name: item.Producto || item.Nombre || "Sin nombre",
-          description: item.Descripción || "",
-          price: Number(item["Precio 1"] || 0),
-          category: item.Categoría || "General",
-          available: true,
+          name: item.Nombre || item.Plato || item.Producto || item.Item || "Sin nombre",
+          code: String(item.Código || item.Codigo || item.SKU || item.Code || "").trim(),
+          category: item.Categoría || item.Categoria || item.Category || "Otros",
+          description: item.Descripción || item.Descripcion || item.Description || "",
+          price: parseFloat(String(item.Precio || item.Price || item.Costo || item["Precio 1"] || 0).replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+          stock: parseFloat(String(item.Stock || 100)),
+          available: String(item.Disponibilidad || item.Available || 'TRUE').toUpperCase() === 'TRUE',
+          imageUrl: item.Imagen_URL || item.Imagen || item.Image || "",
           businessId: effectiveBusinessId,
           venueId: effectiveBusinessId,
           assignedVenue: effectiveVenueName,

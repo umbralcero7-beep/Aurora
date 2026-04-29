@@ -204,14 +204,14 @@ export default function InventoryPage() {
         } else {
           // Motor de Inyección de Menú
           await addDoc(collection(db, "menu"), {
-            name: item.Nombre || item.Plato || "Sin nombre",
-            code: item.Código || item.Codigo || item.SKU || "",
-            category: item.Categoría || item.Categoria || "Otros",
-            description: item.Descripción || item.Descripcion || "",
-            price: parseFloat(String(item.Precio || 0).replace(/[^\d.]/g, '')) || 0,
-            stock: parseFloat(item.Stock || 100),
-            available: String(item.Disponibilidad || 'TRUE').toUpperCase() === 'TRUE',
-            imageUrl: item.Imagen_URL || item.Imagen || "",
+            name: item.Nombre || item.Plato || item.Producto || item.Item || "Sin nombre",
+            code: String(item.Código || item.Codigo || item.SKU || item.Code || "").trim(),
+            category: item.Categoría || item.Categoria || item.Category || "Otros",
+            description: item.Descripción || item.Descripcion || item.Description || "",
+            price: parseFloat(String(item.Precio || item.Price || item.Costo || 0).replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+            stock: parseFloat(String(item.Stock || 100)),
+            available: String(item.Disponibilidad || item.Available || 'TRUE').toUpperCase() === 'TRUE',
+            imageUrl: item.Imagen_URL || item.Imagen || item.Image || "",
             businessId: effectiveBusinessId,
             venueId: effectiveBusinessId,
             assignedVenue: effectiveVenueName,
