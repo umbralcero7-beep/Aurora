@@ -1,6 +1,6 @@
 "use client"
 
-import { isSuperUser } from '@/lib/constants';
+import { isSuperUser, calculateSubtotalFromTotal } from '@/lib/constants';
 import { useState, useMemo, useEffect } from "react"
 import { 
   Activity,
@@ -531,7 +531,7 @@ export default function FiscalControlPage() {
     const firstInvoice = invoiceNumbers[0] || 'N/A'
     const lastInvoice = invoiceNumbers[invoiceNumbers.length - 1] || 'N/A'
 
-    const subtotalNoTax = stats.totalCombined / 1.15
+    const subtotalNoTax = calculateSubtotalFromTotal(stats.totalCombined)
     const ivaAmount = stats.totalCombined - subtotalNoTax
     const discounts = sessionInvoices.reduce((a, inv) => a + (Number(inv.discount) || 0), 0)
     const tips = sessionInvoices.reduce((a, inv) => a + (Number(inv.tip) || 0), 0)
@@ -723,7 +723,6 @@ export default function FiscalControlPage() {
               </div>
            </CardContent>
         </Card>
-      </div>
         <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2rem] p-2 relative overflow-hidden md:col-span-2">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <CardHeader className="pb-2">

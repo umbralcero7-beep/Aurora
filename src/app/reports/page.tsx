@@ -368,8 +368,8 @@ export default function ReportsPage() {
   if (!mounted) return null;
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-white min-h-full max-w-[1600px] mx-auto font-body">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-50 pb-6">
+    <div className="p-4 md:p-10 space-y-10 bg-white min-h-full max-w-[1600px] mx-auto font-body animate-in fade-in duration-700">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 pb-8 border-b border-slate-100">
         <div>
           <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase flex items-center gap-4">
             <Globe className="h-8 w-8 text-secondary" />
@@ -382,8 +382,8 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] p-2 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <Card className="bg-slate-900 text-white border-none shadow-2xl rounded-[2.5rem] p-4 relative overflow-hidden card-hover transition-all duration-500">
+          <div className="absolute top-0 right-0 w-40 h-40 bg-secondary/30 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Revenue Sesión Abierta</CardTitle>
           </CardHeader>
@@ -395,7 +395,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2.5rem] p-2">
+        <Card className="bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-4 card-hover transition-all duration-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Canal POS (Salón)</CardTitle>
           </CardHeader>
@@ -408,7 +408,7 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-50 border-slate-100 shadow-xl rounded-[2.5rem] p-2">
+        <Card className="bg-white border border-slate-100 shadow-xl rounded-[2.5rem] p-4 card-hover transition-all duration-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Canal Domicilios</CardTitle>
           </CardHeader>
@@ -424,9 +424,9 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8">
-          <Tabs defaultValue="audit" className="space-y-6">
-            <TabsList className="bg-slate-100 rounded-xl p-1 h-12">
-              <TabsTrigger value="audit" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">
+          <Tabs defaultValue="audit" className="space-y-8">
+            <TabsList className="bg-slate-100/50 backdrop-blur-md rounded-2xl p-1.5 h-14 border border-slate-100">
+              <TabsTrigger value="audit" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg px-8 transition-all">
                 <ClipboardCheck className="mr-2 h-3 w-3" /> Auditoría Inventario
               </TabsTrigger>
               <TabsTrigger value="deliveries" className="rounded-lg font-black text-[8px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-sm px-6">

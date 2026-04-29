@@ -9,5 +9,8 @@
     "frameworksBackend": {
       "region": "us-central1"
     }
+  },
+  "dataconnect": {
+    "source": "dataconnect"
   }
 }

@@ -1,0 +1,80 @@
+type Venue @table {
+  id: UUID! @default(expr: "uuidV4()")
+  name: String!
+  taxId: String!
+  country: String!
+  currency: String!
+  timezone: String!
+  isActive: Boolean! @default(value: true)
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+type User @table {
+  id: String! @default(expr: "auth.uid") # Firebase Auth UID
+  email: String! @unique
+  displayName: String!
+  role: String! # ADMIN, WAITER, CHEF, CASHIER
+  assignedVenueId: UUID
+  assignedVenue: Venue
+  isActive: Boolean! @default(value: true)
+}
+
+type Product @table {
+  id: UUID! @default(expr: "uuidV4()")
+  venueId: UUID!
+  venue: Venue!
+  name: String!
+  description: String
+  category: String!
+  price: Float!
+  cost: Float!
+  taxRate: Float! @default(value: 0.19) # 19% IVA por defecto (Colombia), escalable a otros países
+  stock: Float! @default(value: 0)
+  isAvailable: Boolean! @default(value: true)
+}
+
+type Order @table {
+  id: UUID! @default(expr: "uuidV4()")
+  venueId: UUID!
+  venue: Venue!
+  orderNumber: String!
+  type: String! # POS, COMANDA, DELIVERY
+  status: String! # PENDING, IN_KITCHEN, READY, DELIVERED, PAID, CANCELLED
+  subtotal: Float!
+  taxAmount: Float!
+  discount: Float! @default(value: 0)
+  total: Float!
+  paymentMethod: String # CASH, CARD, TRANSFER
+  cashTendered: Float
+  createdByUserId: String!
+  createdByUser: User!
+  createdAt: Timestamp! @default(expr: "request.time")
+  closedAt: Timestamp
+}
+
+type OrderItem @table {
+  id: UUID! @default(expr: "uuidV4()")
+  orderId: UUID!
+  order: Order!
+  productId: UUID!
+  product: Product!
+  quantity: Float!
+  unitPrice: Float!
+  taxRate: Float!
+  notes: String
+}
+
+type FiscalReport @table {
+  id: UUID! @default(expr: "uuidV4()")
+  venueId: UUID!
+  venue: Venue!
+  reportType: String! # X, Z
+  reportNumber: Int!
+  totalGross: Float!
+  totalNet: Float!
+  taxCollected: Float!
+  cashCounted: Float
+  generatedByUserId: String!
+  generatedByUser: User!
+  createdAt: Timestamp! @default(expr: "request.time")
+}

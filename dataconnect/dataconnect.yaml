@@ -1,0 +1,11 @@
+specVersion: "v1alpha"
+serviceId: "aurora-dataconnect"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "auroradb"
+      cloudSql:
+        instanceId: "aurora-sql-instance"
+connectorDirs: ["./connector"]

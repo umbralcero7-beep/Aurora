@@ -1,0 +1,26 @@
+query GetVenueOrders($venueId: UUID!) @auth(level: PUBLIC) {
+  orders(where: { venueId: { eq: $venueId } }, orderBy: [{ createdAt: DESC }]) {
+    id
+    orderNumber
+    type
+    status
+    total
+    createdAt
+    orderItems_on_order {
+      product {
+        name
+      }
+      quantity
+    }
+  }
+}
+
+query GetProductsByVenue($venueId: UUID!) @auth(level: PUBLIC) {
+  products(where: { venueId: { eq: $venueId }, isAvailable: { eq: true } }) {
+    id
+    name
+    category
+    price
+    taxRate
+  }
+}

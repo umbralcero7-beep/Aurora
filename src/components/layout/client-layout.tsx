@@ -192,7 +192,6 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                   Instalar App
                 </button>
               )}
-              <ThemeToggle />
               
               <div 
                 className={cn(
@@ -263,7 +262,7 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light">
       <FirebaseClientProvider>
         <LanguageProvider>
           <AuthWrapper>

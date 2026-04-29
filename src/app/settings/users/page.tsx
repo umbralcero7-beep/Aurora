@@ -61,6 +61,19 @@ import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, FirestoreOfflineError, isOfflineError } from '@/firebase/errors';
 
+const AVAILABLE_MODULES = [
+  { id: 'pos', label: 'Smart POS' },
+  { id: 'comandas', label: 'Comandas' },
+  { id: 'orders', label: 'Cocina' },
+  { id: 'deliveries', label: 'Domicilios' },
+  { id: 'inventory', label: 'Inventario' },
+  { id: 'fiscal-control', label: 'Control Fiscal' },
+  { id: 'reports', label: 'Reportes' },
+  { id: 'hr', label: 'Talento (HR)' },
+  { id: 'customers', label: 'Clientes' },
+  { id: 'settings', label: 'Ajustes' },
+];
+
 export default function UserManagementPage() {
   const { t, language } = useLanguage();
   const db = useFirestore();
@@ -81,6 +94,7 @@ export default function UserManagementPage() {
   const [displayName, setDisplayName] = useState('');
   const [role, setRole] = useState('WAITER');
   const [businessId, setBusinessId] = useState('');
+  const [modulesAllowed, setModulesAllowed] = useState<string[]>(AVAILABLE_MODULES.map(m => m.id));
 
   const isSuper = isSuperUser(currentUser?.email);
 
@@ -121,6 +135,7 @@ export default function UserManagementPage() {
         role: role,
         businessId: role === 'SUPPORT' ? 'global' : businessId,
         assignedVenue: venueName.toUpperCase(),
+        modulesAllowed: modulesAllowed,
         updatedAt: serverTimestamp(),
       };
 
@@ -158,6 +173,7 @@ export default function UserManagementPage() {
     setDisplayName(user.displayName || '');
     setRole(user.role || 'WAITER');
     setBusinessId(user.businessId || '');
+    setModulesAllowed(user.modulesAllowed || AVAILABLE_MODULES.map(m => m.id));
     setIsOpen(true);
   };
 
@@ -246,6 +262,7 @@ export default function UserManagementPage() {
     setDisplayName('');
     setRole('WAITER');
     setBusinessId('');
+    setModulesAllowed(AVAILABLE_MODULES.map(m => m.id));
     setEditingEmail(null);
   };
 
@@ -356,6 +373,32 @@ export default function UserManagementPage() {
                     </Select>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Módulos Permitidos</Label>
+                  <div className="grid grid-cols-2 gap-3 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    {AVAILABLE_MODULES.map(mod => (
+                      <label key={mod.id} className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative flex items-center justify-center">
+                          <input 
+                            type="checkbox" 
+                            className="peer appearance-none h-5 w-5 border-2 border-slate-300 rounded-md checked:bg-primary checked:border-primary transition-all cursor-pointer"
+                            checked={modulesAllowed.includes(mod.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) setModulesAllowed(prev => [...prev, mod.id]);
+                              else setModulesAllowed(prev => prev.filter(id => id !== mod.id));
+                            }}
+                          />
+                          <svg className="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-600 uppercase group-hover:text-primary transition-colors">{mod.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
               </div>
               <DialogFooter className="flex gap-4">
                 <Button variant="ghost" onClick={() => setIsOpen(false)} className="flex-1 font-black text-[10px] uppercase tracking-widest h-12">Cancelar</Button>

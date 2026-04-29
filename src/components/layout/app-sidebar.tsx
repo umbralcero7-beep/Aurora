@@ -178,16 +178,23 @@ export function AppSidebar() {
     navGroups
       .map(group => ({
         ...group,
-        items: group.items.filter(item => item.roles.includes(role)),
+        items: group.items.filter(item => {
+          if (isSuper) return true; // Súper usuario ve todo
+          if (profile?.modulesAllowed && Array.isArray(profile.modulesAllowed)) {
+            const moduleId = item.url.split('?')[0].replace('/', '');
+            return profile.modulesAllowed.includes(moduleId);
+          }
+          return item.roles.includes(role);
+        }),
       }))
       .filter(group => group.items.length > 0),
-    [navGroups, role]
+    [navGroups, role, profile, isSuper]
   );
 
   if (!mounted) return null;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-slate-100/80 bg-white">
+    <Sidebar collapsible="icon" className="border-r border-slate-100/50 bg-white/80 backdrop-blur-xl">
       <SidebarHeader className={cn(
         "flex flex-col items-center justify-center border-b border-slate-100/60 overflow-hidden transition-all duration-300",
         isCollapsed ? "h-12 px-0" : "h-14 px-4"
@@ -224,8 +231,8 @@ export function AppSidebar() {
                           className={cn(
                             "transition-all duration-200 relative",
                             isActive 
-                              ? "bg-primary/[0.06] text-primary" 
-                              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50",
+                              ? "bg-primary text-white shadow-lg shadow-primary/25 ring-1 ring-primary/20" 
+                              : "text-slate-400 hover:text-slate-900 hover:bg-slate-100/60",
                             isCollapsed 
                               ? "h-10 w-10 mx-auto justify-center rounded-xl" 
                               : "h-10 rounded-xl"

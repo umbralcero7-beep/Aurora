@@ -1,0 +1,6 @@
+connectorId: "aurora-connector"
+authMode: "PUBLIC" # In production this should be strictly controlled
+generate:
+  javascriptSdk:
+    outputDir: "../../src/dataconnect"
+    package: "@aurora/dataconnect"

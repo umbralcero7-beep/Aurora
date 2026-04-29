@@ -1,13 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import { Roboto } from 'next/font/google';
+import { Outfit } from 'next/font/google';
 import { ClientLayout } from "@/components/layout/client-layout";
 
-const roboto = Roboto({
-  weight: ['100', '300', '400', '500', '700', '900'],
+const outfit = Outfit({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-roboto',
+  variable: '--font-outfit',
 });
 
 export const viewport: Viewport = {
@@ -51,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={roboto.variable} suppressHydrationWarning>
+    <html lang="es" className={outfit.variable} suppressHydrationWarning>
       <body className="font-body antialiased bg-background text-foreground">
         <ClientLayout>
           {children}

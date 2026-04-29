@@ -1,7 +1,7 @@
 
 "use client"
 
-import { isSuperUser } from '@/lib/constants';
+import { isSuperUser, calculateTotalWithTax, calculateSubtotalFromTotal } from '@/lib/constants';
 import { useState, useMemo, useEffect } from "react"
 import { 
   Search, 
@@ -119,7 +119,9 @@ export default function ComandasPage() {
   const filteredMenu = activeMenu
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
     .filter(item => {
-      const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesSearch = 
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        item.code?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCategory = activeCategory === "Todos" || item.category === activeCategory
       return matchesSearch && matchesCategory
     })
@@ -154,7 +156,7 @@ export default function ComandasPage() {
       tableNumber: selectedTable,
       guestCount: guestCount,
       items: cart,
-      total: cart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15,
+      total: calculateTotalWithTax(cart.reduce((acc, i) => acc + (i.price * i.quantity), 0)),
       status: "Open",
       createdAt: new Date().toISOString(),
       businessId: effectiveBusinessId,
@@ -177,7 +179,7 @@ export default function ComandasPage() {
   }
 
   const subtotal = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0)
-  const total = subtotal * 1.15
+  const total = calculateTotalWithTax(subtotal)
 
   function updateQuantity(id: string, delta: number) {
     setCart(prev => prev.map(i => 
@@ -258,7 +260,7 @@ export default function ComandasPage() {
               <Card 
                 key={item.id} 
                 className={cn(
-                  "flex items-center p-3 gap-4 border-slate-100 rounded-2xl shadow-sm active:scale-95 transition-all overflow-hidden relative",
+                  "flex items-center p-3 gap-4 border-slate-100 rounded-2xl shadow-sm active:scale-95 transition-all overflow-hidden relative card-hover cursor-pointer",
                   !item.available && "opacity-40 grayscale"
                 )} 
                 onClick={() => addToCart(item)}
@@ -267,7 +269,10 @@ export default function ComandasPage() {
                   <img src={item.imageUrl || `https://picsum.photos/seed/${item.id}/200/200`} className="object-cover w-full h-full" alt={item.name} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-black text-xs text-slate-900 uppercase truncate mb-1">{item.name}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    {item.code && <Badge variant="outline" className="text-[7px] font-black px-1.5 h-3.5 border-slate-200 text-slate-400 bg-slate-50 uppercase">{item.code}</Badge>}
+                    <p className="font-black text-xs text-slate-900 uppercase truncate">{item.name}</p>
+                  </div>
                   <p className="text-[10px] text-slate-400 font-bold uppercase">{formatCurrencyDetailed(item.price)}</p>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center">

@@ -1,6 +1,6 @@
 "use client"
 
-import { isSuperUser } from '@/lib/constants';
+import { isSuperUser, calculateTotalWithTax, calculateSubtotalFromTotal } from '@/lib/constants';
 import { useState, useMemo, useEffect } from "react"
 import { 
   Search, 
@@ -169,7 +169,9 @@ export default function POSPage() {
   const filteredMenu = useMemo(() => {
     if (!dbMenu) return []
     return dbMenu.filter(item => {
-      const matchesSearch = item.name?.toLowerCase().includes(menuSearch.toLowerCase())
+      const matchesSearch = 
+        item.name?.toLowerCase().includes(menuSearch.toLowerCase()) ||
+        item.code?.toLowerCase().includes(menuSearch.toLowerCase())
       const matchesCategory = activeCategory === "TODOS" || item.category?.toUpperCase() === activeCategory
       return matchesSearch && matchesCategory
     })
@@ -183,14 +185,14 @@ export default function POSPage() {
 
   // Logic
   const currentTotal = useMemo(() => {
-    if (directCart.length > 0) return directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0) * 1.15
+    if (directCart.length > 0) return calculateTotalWithTax(directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0))
     if (selectedOrder) return selectedOrder.total || 0
     return 0
   }, [directCart, selectedOrder])
 
   const currentSubtotal = useMemo(() => {
     if (directCart.length > 0) return directCart.reduce((acc, i) => acc + (i.price * i.quantity), 0)
-    if (selectedOrder) return selectedOrder.total / 1.15
+    if (selectedOrder) return calculateSubtotalFromTotal(selectedOrder.total)
     return 0
   }, [directCart, selectedOrder])
 
@@ -251,8 +253,8 @@ export default function POSPage() {
       tableNumber: isDirect ? "PARA LLEVAR" : selectedOrder?.tableNumber,
       customerName: isElectronicEnabled ? customerData.name : "Consumidor Final",
       items: cartToProcess,
-      subtotal: totalToProcess / 1.15,
-      tax: totalToProcess - (totalToProcess / 1.15),
+      subtotal: calculateSubtotalFromTotal(totalToProcess),
+      tax: totalToProcess - calculateSubtotalFromTotal(totalToProcess),
       total: totalToProcess,
       paymentMethod: paymentMethod,
       timestamp: new Date().toISOString(),
@@ -290,7 +292,7 @@ export default function POSPage() {
     <div className="h-screen bg-white flex flex-col font-sans overflow-hidden text-slate-800">
       
       {/* ═══ Header Compacto (fit focus) ═══ */}
-      <header className="h-16 bg-primary border-b border-primary-foreground/10 px-4 flex items-center justify-between shadow-md shrink-0">
+      <header className="h-16 bg-primary/95 backdrop-blur-md border-b border-white/10 px-4 flex items-center justify-between shadow-lg z-50 shrink-0">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
              <div className="h-9 w-9 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
@@ -359,7 +361,7 @@ export default function POSPage() {
                           </div>
                           <div className="flex justify-between items-end">
                              {acc.tableNumber && <Badge variant="secondary" className="bg-primary/5 text-primary border-none text-[7px] font-black">Mesa {acc.tableNumber}</Badge>}
-                             <p className="text-lg font-black text-primary tracking-tighter ml-auto">{formatCurrencyDetailed(acc.total * 1.15)}</p>
+                             <p className="text-lg font-black text-primary tracking-tighter ml-auto">{formatCurrencyDetailed(calculateTotalWithTax(acc.total))}</p>
                           </div>
                         </div>
                       ))}
@@ -481,12 +483,15 @@ export default function POSPage() {
                     <p className="text-[10px] font-black uppercase">Sin productos en {activeCategory}</p>
                   </div>
                 ) : filteredMenu.map(item => (
-                  <Card key={item.id} onClick={() => item.available && addToDirectCart(item)} className={cn("group bg-white rounded-[1.5rem] overflow-hidden border-slate-100/50 shadow-sm hover:shadow-lg transition-all cursor-pointer active:scale-95", !item.available && "opacity-40 grayscale pointer-events-none")}>
+                  <Card key={item.id} onClick={() => item.available && addToDirectCart(item)} className={cn("group bg-white rounded-[1.5rem] overflow-hidden border-slate-100 shadow-sm hover:shadow-2xl transition-all cursor-pointer active:scale-95 card-hover", !item.available && "opacity-40 grayscale pointer-events-none")}>
                     <div className="aspect-[5/4] overflow-hidden bg-slate-50 relative">
                       <img src={item.imageUrl || `https://picsum.photos/seed/${item.id}/400/320`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
                     </div>
                     <CardContent className="p-3">
-                       <h4 className="text-[10px] font-black text-slate-800 uppercase truncate mb-2">{item.name}</h4>
+                    <div className="flex items-center gap-2 mb-2">
+                      {item.code && <Badge variant="outline" className="text-[7px] font-black px-1.5 h-3.5 border-slate-200 text-slate-400 bg-slate-50 uppercase">{item.code}</Badge>}
+                      <h4 className="text-[10px] font-black text-slate-800 uppercase truncate">{item.name}</h4>
+                    </div>
                        <div className="flex justify-between items-center">
                          <span className="text-xs font-black text-primary">{formatCurrencyDetailed(item.price)}</span>
                          <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-primary transition-all">

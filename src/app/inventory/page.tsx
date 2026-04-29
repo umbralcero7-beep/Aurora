@@ -32,7 +32,8 @@ import {
   X,
   FileDown,
   Truck,
-  Star
+  Star,
+  FileText
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -204,6 +205,7 @@ export default function InventoryPage() {
           // Motor de Inyección de Menú
           await addDoc(collection(db, "menu"), {
             name: item.Nombre || item.Plato || "Sin nombre",
+            code: item.Código || item.Codigo || item.SKU || "",
             category: item.Categoría || item.Categoria || "Otros",
             description: item.Descripción || item.Descripcion || "",
             price: parseFloat(String(item.Precio || 0).replace(/[^\d.]/g, '')) || 0,
@@ -252,6 +254,9 @@ export default function InventoryPage() {
           <Button variant="outline" className="flex-1 md:flex-none rounded-xl h-12 px-8 border-slate-900 border-2 text-slate-900 shadow-sm font-black text-[10px] uppercase tracking-widest transition-all active:scale-95" onClick={() => { setImportType('menu'); setIsImportOpen(true); }}>
             <Utensils className="mr-2 h-5 w-5" /> Inyectar Menú
           </Button>
+          <Button className="flex-1 md:flex-none rounded-xl h-12 px-8 bg-primary text-white shadow-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95" onClick={() => setIsImportOpen(true)}>
+            <BrainCircuit className="mr-2 h-5 w-5" /> Cero AI Importer (PDF)
+          </Button>
         </div>
       </div>
 
@@ -269,6 +274,7 @@ export default function InventoryPage() {
               <TableHeader className="bg-slate-50/50">
                 <TableRow className="border-b border-slate-100">
                   <TableHead className="font-black text-[10px] uppercase tracking-widest py-8 px-10">Imagen</TableHead>
+                  <TableHead className="font-black text-[10px] uppercase tracking-widest">Código</TableHead>
                   <TableHead className="font-black text-[10px] uppercase tracking-widest">Plato</TableHead>
                   <TableHead className="font-black text-[10px] uppercase tracking-widest text-right">Precio</TableHead>
                   <TableHead className="text-right font-black text-[10px] uppercase tracking-widest px-10">Estado</TableHead>
@@ -280,6 +286,7 @@ export default function InventoryPage() {
                     <TableCell className="px-10 py-6">
                       {item.imageUrl ? <img src={item.imageUrl} className="h-14 w-14 rounded-2xl object-cover shadow-md" /> : <div className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center"><ImageIcon className="h-6 w-6 text-slate-200" /></div>}
                     </TableCell>
+                    <TableCell><code className="font-mono text-[10px] font-black text-slate-400 uppercase">{item.code || '---'}</code></TableCell>
                     <TableCell className="font-black text-slate-900 uppercase text-xs">{item.name}</TableCell>
                     <TableCell className="text-right font-black text-primary text-xl tracking-tighter">{formatCurrencyDetailed(Number(item.price))}</TableCell>
                     <TableCell className="text-right px-10">
@@ -369,9 +376,9 @@ export default function InventoryPage() {
               </div>
               <div>
                 <DialogTitle className="text-xl font-black uppercase">
-                  {importType === 'supplies' ? 'Inyección de Insumos' : 'Inyección de Menú'}
+                  {importType === 'supplies' ? 'Inyección de Insumos' : 'Cero AI Importer (PDF/Excel)'}
                 </DialogTitle>
-                <p className="text-[9px] font-black text-slate-400 uppercase">Protocolo de Carga Masiva - {effectiveVenueName}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase">Protocolo de Carga Inteligente - {effectiveVenueName}</p>
               </div>
             </div>
             <button onClick={() => setIsImportOpen(false)} className="text-white/50 hover:text-white"><X className="h-6 w-6" /></button>
@@ -394,9 +401,16 @@ export default function InventoryPage() {
 
             {!analysisResult ? (
               <div className="flex flex-col items-center justify-center py-20 border-4 border-dashed border-slate-50 rounded-[2rem] bg-slate-50/30 gap-6">
-                <Upload className="h-8 w-8 text-primary animate-bounce" />
-                <Button onClick={() => supplyInputRef.current?.click()} className="bg-primary h-12 px-10 rounded-xl font-black text-[10px] uppercase">Seleccionar Excel</Button>
-                <input type="file" className="hidden" ref={supplyInputRef} accept=".xlsx, .xls" onChange={handleFileUpload} />
+                <div className="flex gap-4">
+                  <FileSpreadsheet className="h-10 w-10 text-emerald-500 opacity-40" />
+                  <FileText className="h-10 w-10 text-primary opacity-40" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="text-[10px] font-black uppercase">Arrastra tu PDF o Excel de Precios</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Cero AI extraerá nombres, códigos y categorías</p>
+                </div>
+                <Button onClick={() => supplyInputRef.current?.click()} className="bg-primary h-12 px-10 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-primary/20 transition-all active:scale-95">Seleccionar Archivo</Button>
+                <input type="file" className="hidden" ref={supplyInputRef} accept=".xlsx, .xls, .pdf" onChange={handleFileUpload} />
               </div>
             ) : (
               <div className="space-y-6">

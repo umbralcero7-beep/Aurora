@@ -1,7 +1,7 @@
 
 "use client"
 
-import { isSuperUser } from '@/lib/constants';
+import { isSuperUser, calculateSubtotalFromTotal, calculateTaxAmount } from '@/lib/constants';
 import { useState } from "react"
 import { 
   Receipt, 
@@ -127,8 +127,8 @@ export default function InvoicesPage() {
         'IDENTIDAD_FISCAL': inv.customerName || 'Consumidor Final',
         'NIT_RUT': inv.customerTaxId || 'S/N',
         'TIPO': inv.isElectronic ? 'ELECTRÓNICA' : 'POS',
-        'SUBTOTAL': inv.subtotal || (Number(inv.total) / 1.15),
-        'IVA_15': inv.tax || (Number(inv.total) - (Number(inv.total) / 1.15)),
+        'SUBTOTAL': inv.subtotal || calculateSubtotalFromTotal(Number(inv.total)),
+        'IVA_15': inv.tax || calculateTaxAmount(Number(inv.total)),
         'TOTAL_BRUTO': Number(inv.total),
         'MEDIO_PAGO': inv.paymentMethod || 'Efectivo',
         'SEDE': inv.assignedVenue || 'Sede Central',
@@ -440,11 +440,11 @@ export default function InvoicesPage() {
                   <div className="w-full md:w-[280px] space-y-4">
                     <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       <span>Subtotal</span>
-                      <span className="text-slate-900">{formatCurrencyDetailed(selectedInvoice?.subtotal || (selectedInvoice?.total / 1.15))}</span>
+                      <span className="text-slate-900">{formatCurrencyDetailed(selectedInvoice?.subtotal || calculateSubtotalFromTotal(selectedInvoice?.total))}</span>
                     </div>
                     <div className="flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       <span>IVA / Impoconsumo (15%)</span>
-                      <span className="text-primary">{formatCurrencyDetailed(selectedInvoice?.tax || (selectedInvoice?.total - (selectedInvoice?.total / 1.15)))}</span>
+                      <span className="text-primary">{formatCurrencyDetailed(selectedInvoice?.tax || calculateTaxAmount(selectedInvoice?.total))}</span>
                     </div>
                     <div className="h-px bg-slate-200 my-2" />
                     <div className="flex justify-between items-end">

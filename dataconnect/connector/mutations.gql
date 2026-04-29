@@ -1,0 +1,22 @@
+mutation CreateOrder(
+  $venueId: UUID!, 
+  $orderNumber: String!, 
+  $type: String!, 
+  $subtotal: Float!, 
+  $taxAmount: Float!, 
+  $total: Float!, 
+  $createdByUserId: String!
+) @auth(level: PUBLIC) {
+  order_insert(
+    data: {
+      venueId: $venueId,
+      orderNumber: $orderNumber,
+      type: $type,
+      status: "PENDING",
+      subtotal: $subtotal,
+      taxAmount: $taxAmount,
+      total: $total,
+      createdByUserId: $createdByUserId
+    }
+  )
+}
