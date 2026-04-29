@@ -124,6 +124,27 @@
 .h-dvh {
   height: 100dvh;
 }
+
+/* Visual Comfort - Soft Eye Mode */
+.soft-eye-mode {
+  --background: 34 40% 98%; /* Warm Cream Background */
+  --foreground: 20 10% 20%;
+  --card: 34 40% 99%;
+  --muted: 34 20% 94%;
+  filter: sepia(0.05) contrast(0.98);
+}
+
+.soft-eye-mode .bg-white {
+  background-color: #fdfaf6 !important;
+}
+
+.soft-eye-mode .bg-slate-50 {
+  background-color: #f8f3ed !important;
+}
+
+.soft-eye-mode .bg-slate-100 {
+  background-color: #f2ede4 !important;
+}
 .min-h-dvh {
   min-height: 100dvh;
 }

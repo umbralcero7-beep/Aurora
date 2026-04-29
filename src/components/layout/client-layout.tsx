@@ -21,7 +21,9 @@ import {
   ChefHat,
   TrendingUp,
   Truck,
-  Settings
+  Settings,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Logo } from '@/components/ui/logo';
 import { isSuperUser } from '@/lib/constants';
@@ -71,8 +73,11 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [visualComfort, setVisualComfort] = useState(false);
 
   useEffect(() => {
+    const saved = localStorage.getItem('aurora-visual-comfort') === 'true';
+    setVisualComfort(saved);
     setIsMounted(true);
 
     const handleBeforeInstallPrompt = (e: any) => {
@@ -168,7 +173,10 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-dvh w-full bg-slate-50/30 overflow-hidden relative">
+      <div className={cn(
+        "flex h-dvh w-full overflow-hidden relative transition-colors duration-700",
+        visualComfort ? "soft-eye-mode bg-[#fdfaf6]" : "bg-slate-50/30"
+      )}>
         <AppSidebar />
         <main className="flex-1 overflow-hidden relative flex flex-col h-full min-h-0">
           {/* Universal Sticky Header (Ultra-Slim Version) */}
@@ -229,6 +237,21 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
                   {isOnline ? 'Online' : 'Bnker'}
                 </span>
               </div>
+
+              <button 
+                onClick={() => {
+                  const newState = !visualComfort;
+                  setVisualComfort(newState);
+                  localStorage.setItem('aurora-visual-comfort', String(newState));
+                }} 
+                className={cn(
+                  "h-6 w-6 md:h-7 md:w-7 rounded-md flex items-center justify-center transition-all border",
+                  visualComfort ? "bg-amber-100 border-amber-200 text-amber-600" : "bg-slate-100/50 border-slate-200/50 text-slate-400 hover:bg-white"
+                )}
+                title="Descanso Visual (Soft Eye)"
+              >
+                {visualComfort ? <Eye className="h-3 w-3.5" /> : <EyeOff className="h-3 w-3.5" />}
+              </button>
 
               <button 
                 onClick={() => router.push('/settings/profile')} 

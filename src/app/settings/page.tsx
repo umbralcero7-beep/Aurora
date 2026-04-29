@@ -464,8 +464,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px] mx-auto bg-white min-h-full font-body">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-6 space-y-8 max-w-[1400px] mx-auto bg-white min-h-full font-body animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-6 border-b border-slate-100">
         <div>
           <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
             <Settings className="h-7 w-7 text-primary" />
@@ -486,15 +486,17 @@ export default function SettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-6">
-          <Card className="rounded-[2rem] bg-slate-900 text-white p-6 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
-            <div className="relative z-10 space-y-4">
-              <div className="flex items-center gap-3">
-                <BrainCircuit className="h-5 w-5 text-primary" />
-                <h4 className="text-[9px] font-black uppercase tracking-widest text-primary">Cero AI Status</h4>
+          <Card className="rounded-[2.5rem] bg-slate-900 text-white p-8 shadow-2xl relative overflow-hidden group card-hover border-none">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
+            <div className="relative z-10 space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
+                  <BrainCircuit className="h-5 w-5 text-primary" />
+                </div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Cero AI Status</h4>
               </div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase italic leading-relaxed">
-                {aiStatus === 'active' ? '"Motor Gemini 2.0 vinculado. Escaneo de transacciones activo."' : '"Modo local activo. Análisis basado en algoritmos de respaldo."'}
+              <p className="text-[12px] font-bold text-slate-300 uppercase italic leading-relaxed">
+                {aiStatus === 'active' ? '"Motor Gemini 2.1 vinculado. Supervisión neuronal activa en esta sede."' : '"Modo local activo. Respaldo por algoritmos deterministas."'}
               </p>
             </div>
           </Card>
@@ -502,15 +504,15 @@ export default function SettingsPage() {
 
         <div className="lg:col-span-3">
           <Tabs defaultValue="billing" className="w-full space-y-6">
-            <TabsList className={cn("bg-slate-100 p-1.5 rounded-[1.5rem] h-14 w-full grid border border-slate-100 overflow-hidden", isAdmin ? "grid-cols-6" : "grid-cols-5")}>
-              <TabsTrigger value="business" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Negocio</TabsTrigger>
-              <TabsTrigger value="billing" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Impuestos</TabsTrigger>
-              <TabsTrigger value="dian" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">DIAN</TabsTrigger>
+            <TabsList className={cn("bg-slate-100/50 backdrop-blur-md p-1.5 rounded-[1.8rem] h-16 w-full grid border border-slate-100 overflow-hidden", isAdmin ? "grid-cols-6" : "grid-cols-5")}>
+              <TabsTrigger value="business" className="rounded-2xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg px-2 transition-all">Negocio</TabsTrigger>
+              <TabsTrigger value="billing" className="rounded-2xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg px-2 transition-all">Impuestos</TabsTrigger>
+              <TabsTrigger value="dian" className="rounded-2xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg px-2 transition-all">DIAN</TabsTrigger>
               {isAdmin && (
-                <TabsTrigger value="users" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Personal</TabsTrigger>
+                <TabsTrigger value="users" className="rounded-2xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg px-2 transition-all">Personal</TabsTrigger>
               )}
-              <TabsTrigger value="import" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white">Inyectar</TabsTrigger>
-              <TabsTrigger value="maintenance" className="rounded-xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Salud</TabsTrigger>
+              <TabsTrigger value="import" className="rounded-2xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:shadow-lg px-2 transition-all">Inyectar</TabsTrigger>
+              <TabsTrigger value="maintenance" className="rounded-2xl font-black text-[9px] uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg px-2 transition-all">Salud</TabsTrigger>
             </TabsList>
 
             <TabsContent value="business">
