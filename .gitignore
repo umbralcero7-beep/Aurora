@@ -3,8 +3,9 @@ node_modules/
 dist/
 build/
 
-# Firebase y Next.js Cache (EL CULPABLE)
+# Firebase, Next.js Cache y Vercel
 .firebase/
+.vercel/
 .next/
 out/
 *.log

@@ -9,8 +9,10 @@ import {
   persistentLocalCache, 
   persistentMultipleTabManager,
   Firestore,
-  memoryLocalCache
+  memoryLocalCache,
+  connectFirestoreEmulator
 } from 'firebase/firestore';
+import { connectAuthEmulator } from 'firebase/auth';
 
 // Singleton para mantener las instancias y evitar re-inicializaciones costosas
 let sdkInstance: { firebaseApp: FirebaseApp; auth: Auth; firestore: Firestore } | null = null;
@@ -56,10 +58,26 @@ export function initializeFirebase() {
     }
   }
 
-  // 4. Configurar Instancia Global
+  const auth = getAuth(firebaseApp);
+
+  // 4. Conectar a Emuladores en localhost
+  if (isBrowser && window.location.hostname === 'localhost') {
+    console.log("Activando modo Localhost: Conectando a emuladores Firebase...");
+    try {
+      // Intentamos conectar a emuladores. Si fallan, la app usar los servicios reales (cloud)
+      // o entrar en modo offline automticamente por el failover de Firestore configurado arriba.
+      connectFirestoreEmulator(firestore, '127.0.0.1', 8080);
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099');
+      console.log("Conexin a emuladores establecida.");
+    } catch (e) {
+      console.warn("Emuladores no detectados. Operando en modo Cloud/Offline:", e);
+    }
+  }
+
+  // 5. Configurar Instancia Global
   sdkInstance = {
     firebaseApp,
-    auth: getAuth(firebaseApp),
+    auth,
     firestore
   };
 

@@ -3,25 +3,14 @@
 import { isSuperUser } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { useAuth, useFirestore } from '@/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  setPersistence,
-  browserLocalPersistence,
-  browserSessionPersistence
-} from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { 
   AlertCircle, 
   Loader2, 
   ChevronDown,
-  ShieldCheck,
   Globe,
-  Info,
-  Key,
   Fingerprint
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -67,8 +56,7 @@ function validatePassword(password: string, lang: 'es' | 'en'): string | null {
 }
 
 export default function LoginPage() {
-  const auth = useAuth();
-  const db = useFirestore();
+  const supabase = createClient();
   const router = useRouter();
   const { toast } = useToast();
   const { language, setLanguage, t } = useLanguage();
@@ -93,7 +81,7 @@ export default function LoginPage() {
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
   const isLocked = lockoutUntil !== null && Date.now() < lockoutUntil;
 
-  // Hydration Guard: Asegura que el componente solo se renderice en el cliente
+  // Hydration Guard
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -117,9 +105,7 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) return;
 
-    // Rate limiting check
     if (isLocked) {
       const remaining = Math.ceil((lockoutUntil! - Date.now()) / 1000);
       setError(language === 'es' 
@@ -134,36 +120,30 @@ export default function LoginPage() {
     try {
       const emailLower = email.trim().toLowerCase();
       
-      await setPersistence(
-        auth, 
-        keepSession ? browserLocalPersistence : browserSessionPersistence
-      );
-      
-      const userCred = await signInWithEmailAndPassword(auth, emailLower, password);
-      
-      // Reset failed attempts on successful login
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email: emailLower,
+        password: password,
+      });
+
+      if (loginError) throw loginError;
+
+      // Reset failed attempts
       setFailedAttempts(0);
       setLockoutUntil(null);
       localStorage.removeItem('aurora_lockout');
       
-      // Store password hash for admin verification
-      try {
-        await updateDoc(doc(db, 'users', emailLower), {
-          passwordHash: password
-        });
-      } catch (e) {
-        console.log('Password hash not stored');
-      }
-      
-      const userDoc = await getDoc(doc(db, 'users', emailLower));
-      const has2FA = userDoc.exists() && userDoc.data().has2FA === true;
-      const secret = userDoc.data()?.totpSecret;
-      
-      if (has2FA && secret) {
-        await auth.signOut();
+      // Fetch profile to check 2FA
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('has_2fa, totp_secret')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profile?.has_2fa && profile?.totp_secret) {
+        await supabase.auth.signOut();
         setPendingEmail(emailLower);
         setPendingPassword(password);
-        setUserSecret(secret);
+        setUserSecret(profile.totp_secret);
         setShow2FA(true);
         setLoading(false);
         return;
@@ -171,14 +151,12 @@ export default function LoginPage() {
       
       router.push('/');
     } catch (err: any) {
-      // Track failed attempts
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
       
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        // Lock out after 5 failed attempts
+      if (err.message === 'Invalid login credentials' || err.status === 400) {
         if (newAttempts >= 5) {
-          const lockoutTime = Date.now() + 15 * 60 * 1000; // 15 minutes
+          const lockoutTime = Date.now() + 15 * 60 * 1000;
           setLockoutUntil(lockoutTime);
           localStorage.setItem('aurora_lockout', lockoutTime.toString());
           setError(language === 'es' 
@@ -189,12 +167,8 @@ export default function LoginPage() {
             ? `Credenciales no válidas. ${5 - newAttempts} intentos restantes.`
             : `Invalid credentials. ${5 - newAttempts} attempts remaining.`);
         }
-      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        setError(language === 'es' 
-          ? "Sin conexión a internet. Verifica tu red e intenta de nuevo." 
-          : "No internet connection. Check your network and try again.");
       } else {
-        setError(language === 'es' ? "Error de conexión. Intenta más tarde." : "Connection error. Try again later.");
+        setError(err.message || (language === 'es' ? "Error de conexión." : "Connection error."));
       }
     } finally {
       setLoading(false);
@@ -203,9 +177,8 @@ export default function LoginPage() {
 
   const handle2FAVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !userSecret) return;
+    if (!userSecret) return;
 
-    // Rate limiting check for 2FA
     if (isLocked) {
       const remaining = Math.ceil((lockoutUntil! - Date.now()) / 1000);
       setError(language === 'es' 
@@ -220,7 +193,6 @@ export default function LoginPage() {
     const isValid = verifyTOTP(userSecret, twoFactorCode);
     
     if (!isValid) {
-      // Track failed 2FA attempts
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
       
@@ -240,17 +212,15 @@ export default function LoginPage() {
       return;
     }
 
-    // Reset failed attempts on successful 2FA
     setFailedAttempts(0);
     setLockoutUntil(null);
     localStorage.removeItem('aurora_lockout');
 
     try {
-      await setPersistence(
-        auth, 
-        keepSession ? browserLocalPersistence : browserSessionPersistence
-      );
-      await signInWithEmailAndPassword(auth, pendingEmail!, pendingPassword!);
+      await supabase.auth.signInWithPassword({
+        email: pendingEmail!,
+        password: pendingPassword!,
+      });
       router.push('/');
     } catch (err: any) {
       setError(language === 'es' ? "Error de conexión." : "Connection error.");
@@ -260,10 +230,7 @@ export default function LoginPage() {
   };
 
   const handle2FASkip = async () => {
-    if (!auth) return;
-    try {
-      await auth.signOut();
-    } catch {}
+    await supabase.auth.signOut();
     setShow2FA(false);
     setTwoFactorCode('');
     setPendingEmail(null);
@@ -273,9 +240,7 @@ export default function LoginPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !db) return;
 
-    // Rate limiting check
     if (isLocked) {
       const remaining = Math.ceil((lockoutUntil! - Date.now()) / 1000);
       setError(language === 'es' 
@@ -297,57 +262,61 @@ export default function LoginPage() {
 
     try {
       const emailLower = email.toLowerCase().trim();
-      const userDocRef = doc(db, 'users', emailLower);
-      const userDoc = await getDoc(userDocRef);
+      
+      // Check if user is in "allow list" (simulated with a profile table or similar)
+      const { data: allowed, error: checkError } = await supabase
+        .from('allowed_users') // You might want to create this table
+        .select('email')
+        .eq('email', emailLower)
+        .single();
 
       const isSuper = isSuperUser(emailLower);
 
-      if (!userDoc.exists() && !isSuper) {
+      if (!allowed && !isSuper) {
         setError(language === 'es' 
-          ? "Este correo no ha sido autorizado en la white-list." 
-          : "This email hasn't been whitelisted.");
+          ? "Este correo no ha sido autorizado." 
+          : "This email hasn't been authorized.");
         setLoading(false);
         return;
       }
 
-      await setPersistence(
-        auth, 
-        keepSession ? browserLocalPersistence : browserSessionPersistence
-      );
-      await createUserWithEmailAndPassword(auth, emailLower, password);
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: emailLower,
+        password: password,
+      });
+
+      if (signUpError) throw signUpError;
       
-      // Reset failed attempts on successful registration
+      if (data.user) {
+        // Create profile
+        await supabase.from('user_profiles').insert({
+          id: data.user.id,
+          email: emailLower,
+          display_name: emailLower.split('@')[0],
+          role: isSuper ? 'SUPPORT' : 'WAITER',
+        });
+      }
+
       setFailedAttempts(0);
       setLockoutUntil(null);
       localStorage.removeItem('aurora_lockout');
       
-      // Store password hash for admin verification
-      try {
-        await updateDoc(doc(db, 'users', emailLower), {
-          passwordHash: password
-        });
-      } catch (e) {
-        console.log('Password hash not stored');
-      }
-      
       toast({ 
         title: language === 'es' ? "Acceso Concedido" : "Access Granted", 
-        description: language === 'es' ? "Bienvenido a Aurora." : "Welcome to Aurora." 
+        description: language === 'es' ? "Bienvenido a Aurora. Por favor verifica tu email si es necesario." : "Welcome to Aurora." 
       });
-      router.push('/');
+      
+      if (data.session) {
+        router.push('/');
+      } else {
+        setError(language === 'es' ? "Verifica tu correo para activar tu perfil." : "Please verify your email to activate your profile.");
+      }
     } catch (err: any) {
-      // Track failed registration attempts
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
       
-      if (err.code === 'auth/email-already-in-use') {
+      if (err.message?.includes('already registered')) {
         setError(language === 'es' ? "Este correo ya está registrado." : "This email is already in use.");
-      } else if (err.code === 'auth/weak-password') {
-        setError(language === 'es' ? "La contraseña es muy débil (min. 6 caracteres)." : "Password is too weak.");
-      } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        setError(language === 'es' 
-          ? "Sin conexión a internet. Verifica tu red e intenta de nuevo." 
-          : "No internet connection. Check your network and try again.");
       } else {
         setError(err.message);
       }
@@ -512,6 +481,12 @@ export default function LoginPage() {
         <div className="mt-16 flex flex-col items-center gap-4 text-center opacity-30">
           <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Aurora OS • Tecnología de Precisión</p>
           <span className="text-[11px] font-bold text-slate-300 uppercase tracking-[0.2em]">Umbral Cero</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+2em]">Umbral Cero</span>
         </div>
       </div>
     </div>

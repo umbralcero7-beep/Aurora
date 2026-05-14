@@ -1,6 +1,8 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  // Vercel: standalone output para bundles serverless optimizados
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -19,14 +21,13 @@ const nextConfig: NextConfig = {
       default-src 'self';
       script-src 'self' 'unsafe-eval' 'unsafe-inline';
       style-src 'self' 'unsafe-inline';
-      img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos https://*.googleusercontent.com;
+      img-src 'self' blob: data: https://placehold.co https://images.unsplash.com https://picsum.photos https://*.googleusercontent.com https://*.supabase.co;
       font-src 'self' data:;
       object-src 'none';
       base-uri 'self';
       form-action 'self';
       frame-ancestors 'none';
-      connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://generativelanguage.googleapis.com;
-      upgrade-insecure-requests;
+      connect-src 'self' http://localhost:* http://127.0.0.1:* https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://generativelanguage.googleapis.com https://*.vercel-analytics.com https://*.vercel-insights.com https://*.vercel.app https://*.supabase.co;
     `.replace(/\s{2,}/g, ' ').trim();
 
     return [

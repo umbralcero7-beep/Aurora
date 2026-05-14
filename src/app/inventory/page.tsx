@@ -2,35 +2,19 @@
 "use client"
 
 import { isSuperUser } from '@/lib/constants';
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { 
   Search, 
   Plus, 
-  MoreVertical, 
-  Upload,
   BrainCircuit,
   Loader2,
   Utensils,
-  Package,
   Image as ImageIcon,
-  Receipt,
-  Wrench,
-  DollarSign,
-  Calendar,
-  CheckCircle2,
   AlertCircle,
   TrendingUp,
-  Filter,
-  ArrowDownToLine,
-  History,
-  ShieldAlert,
-  Zap,
-  Camera,
   FileSpreadsheet,
-  Download,
   Database,
   X,
-  FileDown,
   Truck,
   Star,
   FileText
@@ -54,42 +38,25 @@ import {
 } from "@/components/ui/tabs"
 import { 
   Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle,
-  CardDescription
 } from "@/components/ui/card"
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger, 
-  DialogFooter,
-  DialogDescription
 } from "@/components/ui/dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { useCollection, useFirestore, useMemoFirebase, useUser, useDoc } from "@/firebase"
-import { collection, query, orderBy, addDoc, serverTimestamp, where, doc } from "firebase/firestore"
+import { createClient } from '@/lib/supabase/client';
+import { getSupplies, getMenuItems, getVendors, addMenuItem, upsertSupply } from '@/lib/supabase/data-service';
 import { useLanguage } from "@/context/language-context"
 import { useRouter } from "next/navigation"
 import { cn, formatCurrencyDetailed } from "@/lib/utils"
-import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
 import * as XLSX from 'xlsx'
 import { analyzeExcelData } from "@/ai/flows/excel-analysis-flow"
 
 export default function InventoryPage() {
+  const supabase = createClient();
   const { t } = useLanguage()
-  const db = useFirestore()
-  const { user } = useUser()
   const { toast } = useToast()
   const router = useRouter()
   const supplyInputRef = useRef<HTMLInputElement>(null)
@@ -97,9 +64,14 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("menu")
   const [categoryFilter, setCategoryFilter] = useState("Todas")
-  const [isExpenseOpen, setIsExpenseOpen] = useState(false)
-  const [isAddingExpense, setIsAddingExpense] = useState(false)
   
+  // Data State
+  const [supplies, setSupplies] = useState<any[]>([])
+  const [menuItems, setMenuItems] = useState<any[]>([])
+  const [vendors, setVendors] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
   // Injection State
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [importType, setImportType] = useState<'supplies' | 'menu'>('supplies')
@@ -108,52 +80,41 @@ export default function InventoryPage() {
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [previewData, setPreviewData] = useState<any[]>([])
 
-  const [expenseData, setExpenseData] = useState({
-    description: "",
-    amount: "",
-    category: "Insumos"
-  })
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: userProfile } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single()
+          setProfile(userProfile)
+        }
 
-  const isSuper = isSuperUser(user?.email);
+        const [sData, mData, vData] = await Promise.all([
+          getSupplies(),
+          getMenuItems(),
+          getVendors()
+        ])
+        setSupplies(sData || [])
+        setMenuItems(mData || [])
+        setVendors(vData || [])
+      } catch (error) {
+        console.error("Error loading inventory data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
 
-  const userProfileRef = useMemoFirebase(() => {
-    if (!db || !user?.email) return null;
-    return doc(db, "users", user.email.toLowerCase());
-  }, [db, user?.email]);
-
-  const { data: profile } = useDoc(userProfileRef);
-
+  const isSuper = isSuperUser(profile?.email);
   const isSupport = profile?.role === 'SUPPORT' || isSuper;
-  const effectiveBusinessId = profile?.businessId || (isSuper ? 'matu' : null);
-  const effectiveVenueName = isSupport ? 'GESTIÓN GLOBAL' : (profile?.assignedVenue || 'Sede Central');
-
-  const suppliesRef = useMemoFirebase(() => {
-    if (!db) return null
-    if (isSupport) return query(collection(db, "supplies"))
-    if (!effectiveBusinessId) return null
-    return query(collection(db, "supplies"), where("businessId", "==", effectiveBusinessId))
-  }, [db, effectiveBusinessId, isSupport])
-
-  const menuRef = useMemoFirebase(() => {
-    if (!db) return null
-    if (isSupport) return query(collection(db, "menu"))
-    if (!effectiveBusinessId) return null
-    return query(collection(db, "menu"), where("businessId", "==", effectiveBusinessId))
-  }, [db, effectiveBusinessId, isSupport])
-
-  const vendorsRef = useMemoFirebase(() => {
-    if (!db) return null
-    if (isSupport) return query(collection(db, "vendors"))
-    if (!effectiveBusinessId) return null
-    return query(collection(db, "vendors"), where("businessId", "==", effectiveBusinessId))
-  }, [db, effectiveBusinessId, isSupport])
-
-  const { data: rawSupplies, isLoading: suppliesLoading } = useCollection(suppliesRef)
-  const { data: rawMenu, isLoading: menuLoading } = useCollection(menuRef)
-  const { data: vendors, isLoading: vendorsLoading } = useCollection(vendorsRef)
-
-  const supplies = rawSupplies ? [...rawSupplies].sort((a, b) => (a.name || "").localeCompare(b.name || "")) : [];
-  const menuItems = rawMenu ? [...rawMenu].sort((a, b) => (a.name || "").localeCompare(b.name || "")) : [];
+  const effectiveBusinessId = profile?.business_id || (isSuper ? 'matu' : null);
+  const effectiveVenueName = isSupport ? 'GESTIÓN GLOBAL' : (profile?.assigned_venue || 'Sede Central');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -182,43 +143,36 @@ export default function InventoryPage() {
   };
 
   const executeImport = async () => {
-    if (!db || previewData.length === 0 || !effectiveBusinessId) return;
+    if (previewData.length === 0 || !effectiveBusinessId) return;
     setImporting(true);
     try {
-      const collectionName = importType === 'supplies' ? "supplies" : "menu";
-      
       for (const item of previewData) {
         if (importType === 'supplies') {
-          await addDoc(collection(db, "supplies"), {
+          await upsertSupply({
             name: item.Insumo || item.Nombre || "Sin nombre",
             sku: item.SKU || "S/N",
             unit: item.Unidad || "Unid",
             price: parseFloat(String(item.Costo || 0).replace(/[^\d.]/g, '')) || 0,
             stock: parseFloat(item.Stock || 0),
             category: item.Categoría || "Proteínas",
-            businessId: effectiveBusinessId,
-            venueId: effectiveBusinessId,
-            assignedVenue: effectiveVenueName,
-            createdAt: new Date().toISOString(),
           });
         } else {
-          // Motor de Inyección de Menú
-          await addDoc(collection(db, "menu"), {
+          await addMenuItem({
             name: item.Nombre || item.Plato || item.Producto || item.Item || "Sin nombre",
-            code: String(item.Código || item.Codigo || item.SKU || item.Code || "").trim(),
             category: item.Categoría || item.Categoria || item.Category || "Otros",
             description: item.Descripción || item.Descripcion || item.Description || "",
             price: parseFloat(String(item.Precio || item.Price || item.Costo || 0).replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
-            stock: parseFloat(String(item.Stock || 100)),
             available: String(item.Disponibilidad || item.Available || 'TRUE').toUpperCase() === 'TRUE',
             imageUrl: item.Imagen_URL || item.Imagen || item.Image || "",
-            businessId: effectiveBusinessId,
-            venueId: effectiveBusinessId,
-            assignedVenue: effectiveVenueName,
-            createdAt: new Date().toISOString(),
           });
         }
       }
+      
+      // Refresh data
+      const [sData, mData] = await Promise.all([getSupplies(), getMenuItems()])
+      setSupplies(sData || [])
+      setMenuItems(mData || [])
+
       toast({ title: "Inyección Exitosa", description: `${importType === 'supplies' ? 'Insumos' : 'Platos'} sincronizados con el ecosistema.` });
       setIsImportOpen(false);
       setPreviewData([]);
@@ -233,6 +187,14 @@ export default function InventoryPage() {
     const matchesCategory = categoryFilter === "Todas" || p.category === categoryFilter;
     return matchesSearch && matchesCategory;
   }) || []
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center p-20">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 md:p-10 space-y-8 bg-white min-h-full font-body overflow-x-hidden">
@@ -284,7 +246,7 @@ export default function InventoryPage() {
                 {menuItems.map((item) => (
                   <TableRow key={item.id} className="hover:bg-slate-50/50 border-b border-slate-50">
                     <TableCell className="px-10 py-6">
-                      {item.imageUrl ? <img src={item.imageUrl} className="h-14 w-14 rounded-2xl object-cover shadow-md" /> : <div className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center"><ImageIcon className="h-6 w-6 text-slate-200" /></div>}
+                      {item.image_url ? <img src={item.image_url} className="h-14 w-14 rounded-2xl object-cover shadow-md" /> : <div className="h-14 w-14 bg-slate-50 rounded-2xl flex items-center justify-center"><ImageIcon className="h-6 w-6 text-slate-200" /></div>}
                     </TableCell>
                     <TableCell><code className="font-mono text-[10px] font-black text-slate-400 uppercase">{item.code || '---'}</code></TableCell>
                     <TableCell className="font-black text-slate-900 uppercase text-xs">{item.name}</TableCell>
@@ -313,7 +275,7 @@ export default function InventoryPage() {
               </TableHeader>
               <TableBody>
                 {filteredSupplies.map((p) => {
-                  const isLowStock = Number(p.stock) <= (p.minStock || 10)
+                  const isLowStock = Number(p.stock) <= (p.min_stock || 10)
                   return (
                   <TableRow key={p.id} className={cn("hover:bg-slate-50/50 border-b border-slate-50", isLowStock && "bg-red-50/50")}>
                     <TableCell className="px-10 py-6"><code className="font-mono text-[10px] font-black text-slate-400 uppercase">{p.sku}</code></TableCell>
@@ -338,8 +300,7 @@ export default function InventoryPage() {
 
         <TabsContent value="vendors" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {vendorsLoading ? <div className="col-span-full text-center py-20"><Loader2 className="animate-spin h-8 w-8 mx-auto text-primary" /></div> : 
-             !vendors || vendors.length === 0 ? (
+             {!vendors || vendors.length === 0 ? (
                <div className="col-span-full py-20 text-center border-4 border-dashed rounded-[2.5rem] bg-slate-50/50">
                  <Truck className="h-12 w-12 mx-auto mb-4 opacity-10 text-slate-400" />
                  <p className="text-slate-300 font-black uppercase text-xs">Sin proveedores vinculados</p>
@@ -358,7 +319,7 @@ export default function InventoryPage() {
                    <p className="text-[9px] font-bold text-slate-400 uppercase">{v.category}</p>
                  </div>
                  <div className="pt-4 border-t border-slate-50 flex justify-between items-center">
-                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Lead Time: {v.leadTime || '2'} Días</span>
+                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Lead Time: {v.lead_time || '2'} Días</span>
                    <Button variant="ghost" size="sm" className="h-8 font-black text-[8px] uppercase text-primary">Gestionar Orden</Button>
                  </div>
                </Card>

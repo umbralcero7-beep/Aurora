@@ -23,7 +23,8 @@ import {
   Truck,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  ShieldCheck
 } from "lucide-react";
 import { Logo } from '@/components/ui/logo';
 import { isSuperUser } from '@/lib/constants';
