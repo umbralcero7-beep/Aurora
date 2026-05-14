@@ -486,9 +486,3 @@ export default function LoginPage() {
     </div>
   );
 }
-2em]">Umbral Cero</span>
-        </div>
-      </div>
-    </div>
-  );
-}
